@@ -1,0 +1,943 @@
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Трон галактики будет моим!</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background: linear-gradient(180deg, #0a0a1a 0%, #1a1a2e 30%, #4a2c1a 70%, #d4760a 100%);
+            color: #e0d0b0;
+            font-family: 'Courier New', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            flex-direction: column;
+        }
+        /* 📱 МОБИЛЬНАЯ ВЕРСИЯ — обёртка для кнопки */
+        #mobile-toggle-wrapper {
+            max-width: 950px;
+            width: 100%;
+            margin: 0 auto 10px;
+            text-align: right;
+            padding: 0 20px;
+        }
+        #mobile-toggle-wrapper .btn {
+            min-width: auto;
+            max-width: 220px;
+            font-size: 0.9rem;
+            padding: 8px 16px;
+        }
+        #game-wrapper {
+            max-width: 950px;
+            width: 100%;
+            background: rgba(10, 10, 26, 0.85);
+            border: 2px solid #d4760a;
+            border-radius: 8px;
+            padding: 32px 40px;
+            box-shadow: 0 0 40px rgba(212, 118, 10, 0.3), inset 0 0 20px rgba(0, 0, 0, 0.5);
+            margin: 0 auto;
+            padding-bottom: 120px;
+        }
+        /* 📱 МОБИЛЬНАЯ ВЕРСИЯ — масштабирование на 50% */
+        body.mobile-mode #game-wrapper {
+            zoom: 0.5;
+        }
+        #stats {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            background: rgba(20, 20, 40, 0.9);
+            padding: 12px 18px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 1rem;
+            border: 1px solid #8a5a2a;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+        #stats span { color: #c0b090; }
+        #stats .value {
+            color: #d4760a;
+            font-weight: bold;
+            text-shadow: 0 0 5px rgba(212, 118, 10, 0.5);
+        }
+        /* 🐹 БРОНЕНОСЕЦ — стиль для подписи компаньона */
+        #stats .armadillo-tag {
+            color: #6ac0ff;
+            font-size: 0.85rem;
+            display: block;
+            margin-top: 2px;
+            text-shadow: 0 0 5px rgba(106, 192, 255, 0.5);
+        }
+        #gameOutput {
+            background: rgba(5, 5, 15, 0.9);
+            border: 1px solid #6a4a2a;
+            border-radius: 6px;
+            padding: 18px 20px;
+            min-height: 280px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            font-size: 1rem;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            word-break: break-word;
+            color: #c0b090;
+            box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.7);
+        }
+        #gameOutput .enemy { color: #ff4a3a; text-shadow: 0 0 3px rgba(255, 74, 58, 0.5); }
+        #gameOutput .player { color: #4aff7a; text-shadow: 0 0 3px rgba(74, 255, 122, 0.5); }
+        #gameOutput .info { color: #8a8a9a; }
+        #gameOutput .artifact { color: #ffaa3a; text-shadow: 0 0 3px rgba(255, 170, 58, 0.5); }
+        #gameOutput .event { color: #ffd700; text-shadow: 0 0 3px rgba(255, 215, 0, 0.5); }
+        #gameOutput .location { color: #6ac0ff; font-weight: bold; text-shadow: 0 0 3px rgba(106, 192, 255, 0.5); }
+        #gameOutput .system { color: #4a9aff; }
+        /* 🏛️ ХРАМ — стиль для новой локации */
+        #gameOutput .temple { color: #c060ff; font-weight: bold; text-shadow: 0 0 5px rgba(192, 96, 255, 0.6); }
+        #gameActions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 8px;
+        }
+        .btn {
+            background: rgba(30, 30, 50, 0.9);
+            border: 1px solid #8a5a2a;
+            color: #e0d0b0;
+            padding: 12px 24px;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 120px;
+            flex: 1 0 auto;
+            max-width: 220px;
+            text-align: center;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .btn:hover {
+            background: rgba(212, 118, 10, 0.3);
+            border-color: #d4760a;
+            color: #ffffff;
+            box-shadow: 0 0 15px rgba(212, 118, 10, 0.5);
+        }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+        .btn.danger { border-color: #aa3020; color: #ff6a5a; }
+        .btn.danger:hover { background: rgba(170, 48, 32, 0.3); border-color: #ff4a3a; box-shadow: 0 0 15px rgba(255, 74, 58, 0.5); }
+        .btn.success { border-color: #3a8a2a; color: #6aff5a; }
+        .btn.success:hover { background: rgba(58, 138, 42, 0.3); border-color: #4aff3a; box-shadow: 0 0 15px rgba(74, 255, 58, 0.5); }
+        .btn.event { border-color: #aa8a20; color: #ffd700; }
+        .btn.event:hover { background: rgba(170, 138, 32, 0.3); border-color: #ffd700; box-shadow: 0 0 15px rgba(255, 215, 0, 0.5); }
+        .btn.location-btn { border-color: #2a6aaa; color: #6ac0ff; background: rgba(20, 40, 60, 0.9); }
+        .btn.location-btn:hover { background: rgba(42, 106, 170, 0.3); border-color: #6ac0ff; box-shadow: 0 0 15px rgba(106, 192, 255, 0.5); }
+        /* 🏛️ ХРАМ — стиль для кнопки новой локации */
+        .btn.temple-btn { border-color: #6a2a8a; color: #c060ff; background: rgba(40, 20, 60, 0.9); }
+        .btn.temple-btn:hover { background: rgba(106, 42, 138, 0.3); border-color: #c060ff; box-shadow: 0 0 15px rgba(192, 96, 255, 0.5); }
+        #inventory {
+            margin-top: 16px;
+            padding: 10px 16px;
+            background: rgba(20, 20, 40, 0.9);
+            border-radius: 6px;
+            font-size: 0.95rem;
+            border: 1px solid #8a5a2a;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 20px;
+            justify-content: center;
+            align-items: center;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+        #inventory span { color: #c0b090; }
+        #inventory .item {
+            color: #ffaa3a;
+            background: rgba(40, 30, 20, 0.9);
+            padding: 2px 14px;
+            border-radius: 4px;
+            border: 1px solid #aa7a3a;
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(10, 10, 26, 0.5); }
+        ::-webkit-scrollbar-thumb { background: #8a5a2a; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #d4760a; }
+        @media (max-width: 600px) {
+            #game-wrapper { padding: 20px; padding-bottom: 100px; }
+            .btn { min-width: 80px; padding: 10px 14px; font-size: 0.9rem; }
+        }
+        .game-wrapper { max-width: 950px; margin: 0 auto; padding: 20px 20px 100px; box-sizing: border-box; position: relative; z-index: 1; }
+        footer, .footer, .t-footer { position: relative; z-index: 0; }
+        @media (max-width: 600px) { .game-wrapper { padding: 15px 15px 80px; } }
+    </style>
+</head>
+<body>
+        <!-- 📱 МОБИЛЬНАЯ ВЕРСИЯ — кнопка переключения масштаба -->
+        <div id="mobile-toggle-wrapper">
+            <button class="btn" id="mobileBtn">📱 Мобильная версия</button>
+        </div>
+        <div id="game-wrapper">
+            <div id="stats">
+                <span>❤️ Здоровье: <span class="value" id="hpDisplay">100/100</span></span>
+                <!-- 🐹 БРОНЕНОСЕЦ — обёртка для силы + подписи компаньона -->
+                <span>⚔️ Сила: <span class="value" id="strengthDisplay">10</span><span id="armadilloTag" class="armadillo-tag" style="display:none;"></span></span>
+                <span>🔫 Оружие: <span class="value" id="weaponDisplay">Сапёрная Лопатка</span></span>
+                <span>📍 Локация: <span class="value" id="locationDisplay">Станция космических челноков</span></span>
+            </div>
+            <div id="gameOutput"></div>
+            <div id="inventory">
+                <span>🎒 Инвентарь:</span>
+                <span id="artifactList">—</span>
+            </div>
+            <div id="gameActions"></div>
+        </div>
+
+    <script>
+        // ============================================================
+        //  ИГРА «ТРОН ГАЛАКТИКИ БУДЕТ МОИМ!» — ЛОКАЦИОННАЯ ВЕРСИЯ
+        // ============================================================
+
+        const ARTIFACTS = {
+            WATER: { id: 'water', name: 'Водичка из Акведука', desc: 'В бою: +3-5 силы (малые уровни), +10-15 (выше Жнеца)', use: (p) => { p.hp = Math.min(p.hp + 20, p.maxHp); } },
+            SHASHLYK: { id: 'shashlyk', name: 'Шашлык из кисубака', desc: 'В бою: +10 силы (малые уровни), +20 (выше Жнеца)', use: (p) => { p.hp = Math.min(p.hp + 15, p.maxHp); } },
+            MILK: { id: 'milk', name: 'Молочко мультикоровы Полины', desc: 'В бою: +10 HP (малые уровни), +15 HP (выше Жнеца)', use: (p) => { p.tempStrength = (p.tempStrength || 0) + 3; } },
+            DARK: { id: 'dark', name: 'Бутылка тёмного пойла', desc: '+15-20 Силы до конца боя, -5-10 HP', use: (p) => {
+                const strBonus = 15 + Math.floor(Math.random() * 6);
+                const hpLoss = 5 + Math.floor(Math.random() * 6);
+                p.tempStrength = (p.tempStrength || 0) + strBonus;
+                p.hp -= hpLoss;
+            } }
+        };
+
+        // 🐹 БРОНЕНОСЕЦ — добавлено поле avgDamage для расчёта прироста силы урона
+        const WEAPONS = {
+            SHOVEL:           { id: 'shovel',          name: 'Сапёрная Лопатка',   damage: () => 5 + Math.floor(Math.random() * 6),  avgDamage: 8 },
+            ORDIAN_KATLASS:   { id: 'ordian_katlass',  name: 'Ордынский катласс',  damage: () => 7 + Math.floor(Math.random() * 7),  avgDamage: 10.5 },
+            REAPER_KHOPESH:   { id: 'reaper_khopesh',  name: 'Кхопеш Жнеца',       damage: () => 9 + Math.floor(Math.random() * 8),  avgDamage: 13 },
+            SWORD:            { id: 'sword',           name: 'Хромосферный Палач', damage: () => 12 + Math.floor(Math.random() * 10), avgDamage: 17 }
+        };
+
+        const ENEMIES = [
+            { id:0, name:'ОДНОНОГИЙ СЕРВ', hp:30, strength:5, desc:'Древний робот-слуга на одной ноге, скрипит и шатается.', events:[{ question:'Серв протягивает вам маслёнку. Принять?', answers:[{ text:'Принять и смазать себя', effect:(g)=>{ g.player.hp=Math.min(g.player.hp+10, g.player.maxHp); g.log('💧 Вы смазали шарниры космоброни, восстановили 10 HP.', 'player'); } }, { text:'Отказаться', effect:(g)=>{ g.log('Вы вежливо отказались.', 'info'); } } ] }] },
+            { id:1, name:'ПИРАТ-ОТМОРОЗОК', hp:40, strength:8, desc:'Космический пират с бластером и крюком вместо руки.', events:[{ question:'Пират целится в вас из бластера. Ваши действия?', answers:[{ text:'Увернуться в сторону', effect:(g)=>{ g.player.tempShield=8; g.log('🛡️ Вы увернулись, следующий урон уменьшен на 8.', 'player'); } }, { text:'Атаковать в ответ', effect:(g)=>{ const dmg=g.player.getDamage(); g.enemy.hp-=dmg; g.log(`⚡ Вы нанесли ${dmg} урона пирату!`, 'player'); } } ] }] },
+            { id:2, name:'МАСТЕР НИКТО', hp:50, strength:10, desc:'Таинственный мастер в чёрном плаще, лицо скрыто.', events:[{ question:'Мастер предлагает сделку: отдайте артефакт, получите силу. Согласиться?', answers:[{ text:'Согласиться (потерять артефакт, +5 силы)', effect:(g)=>{ if(g.player.artifacts.length>0){ const removed=g.player.artifacts.pop(); g.player.tempStrength=(g.player.tempStrength||0)+5; g.log(`Вы отдали ${removed.name} и получили +5 силы.`, 'artifact'); } else { g.log('У вас нет артефактов! Сделка сорвана.', 'info'); } } }, { text:'Отказаться', effect:(g)=>{ g.log('Мастер скрежещет зубами.', 'info'); } } ] }] },
+            { id:3, name:'КИСЛОТНЫЙ БАРОН', hp:60, strength:12, desc:'С установкой, распыляющей кислоту, которая шипит и разъедает пол.', events:[{ question:'Кислота разливается по полу! Куда бежать?', answers:[{ text:'Налево', effect:(g)=>{ g.player.hp-=8; g.log('💥 Вы попали в лужу кислоты, потеряли 8 HP.', 'enemy'); } }, { text:'Направо', effect:(g)=>{ g.log('Вы удачно ускользнули от кислоты.', 'player'); } } ] }] },
+            { id:4, name:'БАРОН ЦЕРБЕРОВ', hp:70, strength:14, desc:'Узурпатор планеты со своими цепными псами, каждый лает по-своему.', events:[{ question:'Барон Церберов атакует тебя тремя штурмовыми челноками. Ваши действия?', answers:[{ text:'Уклониться', effect:(g)=>{ g.player.tempShield=10; g.log('🛡️ Вы уклонились от челноков, защита +10.', 'player'); } }, { text:'Атаковать', effect:(g)=>{ const dmg=g.player.getDamage(); g.enemy.hp-=dmg; g.log(`⚡ Вы атаковали и нанесли ${dmg} урона!`, 'player'); } } ] }] },
+            { id:5, name:'ПРИНЦ-КАДЕТ', hp:65, strength:13, desc:'Молодой принц со здоровенным мечом, но сомневается в своём деле.', events:[{ question:'Принц просит пощады, обещает награду. Что делать?', answers:[{ text:'Пощадить', effect:(g)=>{ if(g.player.artifacts.length<3){ const art={...ARTIFACTS.WATER}; g.player.artifacts.push(art); g.log('🎁 Принц даёт вам Водичку из Акведука!', 'artifact'); } else { g.log('У вас нет места для артефакта.', 'info'); } } }, { text:'Убить (нанести урон)', effect:(g)=>{ const dmg=g.player.getDamage(); g.enemy.hp-=dmg; g.log(`⚔️ Вы нанесли ${dmg} урона принцу.`, 'player'); } } ] }] },
+            { id:6, name:'ЖНЕЦ', hp:80, strength:16, desc:'Сверхмощный адепт Энергии Большого Взрыва, собирающее души. В его глазах пустота.', events:[{ question:'Жнец заносит косу для смертельного удара. Ваши действия?', answers:[{ text:'Применить Энергию Большого Взрыва', effect:(g)=>{ g.player.tempShield=10; g.log('🛡️ Вы блокируете удар, защита +10.', 'player'); } }, { text:'Уклониться', effect:(g)=>{ g.log('Вы применили практику микрощита!', 'player'); } } ] }] },
+            { id:7, name:'ОРДЫНСКИЙ НЕКРОДЕСАНТНИК', hp:90, strength:18, desc:'Хрящезадая тварь в тяжелом штурмовом костюме, с плазмометом и мечом.', events:[{ question:'Некродесантник призывает подкрепление. Уничтожить призыв?', answers:[{ text:'Применить ударную волну', effect:(g)=>{ const dmg=g.player.getDamage(); g.enemy.hp-=dmg; g.log(`⚡ Вы разметали прибывших приспешников и нанесли ${dmg} урона.`, 'player'); } }, { text:'Игнорировать', effect:(g)=>{ g.player.hp-=10; g.log('💀 Подкрепление атакует, потеряли 10 HP.', 'enemy'); } } ] }] },
+            { id:8, name:'ИМПЕРАТОР', hp:100, strength:20, desc:'Правитель галактики, в сияющей броне и с энергетическим скипетром.', events:[{ question:'Император предлагает вам титул главнокомандующего. Согласиться?', answers:[{ text:'Согласиться (победить, но без славы)', effect:(g)=>{ g.log('😔 Вы согласились на сделку. Император остаётся у власти, но вы получаете титул Главнокомандующего. Игра завершена.', 'info'); g.forceWin=true; } }, { text:'Отказаться и биться до конца', effect:(g)=>{ g.log('🔥 Рокош! Вы бросаете вызов императору!', 'event'); } } ] }] },
+            { id:9, name:'ГЕНА ГЕНОЦИД', hp:150, strength:28, desc:'Босс Ордынцев. Гигантское существо из чистой энергии ненависти, способное уничтожать целые миры.', events:[{ question:'Гена Геноцид заряжает свой аннигиляционный луч. Укрыться или атаковать?', answers:[{ text:'Укрыться за энергетическим щитом', effect:(g)=>{ g.player.tempShield=20; g.log('🛡️ Вы укрылись за щитом, защита +20.', 'player'); } }, { text:'Атаковать в ядро энергии', effect:(g)=>{ const dmg=g.player.getDamage()+12; g.enemy.hp-=dmg; g.log(`🎯 Вы попали в ядро и нанесли ${dmg} урона!`, 'player'); } } ] }] }
+        ];
+
+        // -------- ИСПОЛЬЗОВАНИЕ АРТЕФАКТА В БОЮ --------
+        function useArtifactInBattle(art, g) {
+            const isHighLevel = g.enemyIndex > 6; // выше Жнеца (враги 7, 8, 9)
+            if (art.id === 'water') {
+                if (isHighLevel) {
+                    const bonus = 10 + Math.floor(Math.random() * 6);
+                    g.player.tempStrength = (g.player.tempStrength || 0) + bonus;
+                    g.log(`💧 Водичка из Акведука придаёт сил! Сила +${bonus}.`, 'artifact');
+                } else {
+                    const bonus = 3 + Math.floor(Math.random() * 3);
+                    g.player.tempStrength = (g.player.tempStrength || 0) + bonus;
+                    g.log(`💧 Водичка из Акведука придаёт сил! Сила +${bonus}.`, 'artifact');
+                }
+            } else if (art.id === 'shashlyk') {
+                if (isHighLevel) {
+                    g.player.tempStrength = (g.player.tempStrength || 0) + 20;
+                    g.log(`🍖 Шашлык из кисубака придаёт мощь! Сила +20.`, 'artifact');
+                } else {
+                    g.player.tempStrength = (g.player.tempStrength || 0) + 10;
+                    g.log(`🍖 Шашлык из кисубака придаёт мощь! Сила +10.`, 'artifact');
+                }
+            } else if (art.id === 'milk') {
+                if (isHighLevel) {
+                    g.player.hp = Math.min(g.player.hp + 15, g.player.maxHp);
+                    g.log(`🥛 Молочко мультикоровы Полины восстанавливает 15 HP.`, 'player');
+                } else {
+                    g.player.hp = Math.min(g.player.hp + 10, g.player.maxHp);
+                    g.log(`🥛 Молочко мультикоровы Полины восстанавливает 10 HP.`, 'player');
+                }
+            } else if (art.id === 'dark') {
+                const strBonus = 15 + Math.floor(Math.random() * 6);
+                const hpLoss = 5 + Math.floor(Math.random() * 6);
+                g.player.tempStrength = (g.player.tempStrength || 0) + strBonus;
+                g.player.hp -= hpLoss;
+                g.log(`🍷 Вы выпили тёмное пойло! Сила +${strBonus} до конца боя, но потеряно ${hpLoss} HP.`, 'artifact');
+                if (g.player.hp <= 0) {
+                    g.player.hp = 0;
+                    g.updateStats();
+                    gameOver();
+                    return;
+                }
+            } else {
+                art.use(g.player);
+            }
+        }
+
+        // -------- ЛОКАЦИИ --------
+        const LOCATIONS = {
+            SHUTTLE: {
+                id: 'shuttle',
+                name: '🚀 Станция космических челноков',
+                description: 'Оживлённый терминал в пустыне, где пилоты, контрабандисты и пассажиры смешиваются в едином потоке.',
+                actions: [
+                    { text: '🏩 Сходить в кибербордель', exec: (g) => {
+                        if (g.locationVisits.brothel >= 5) {
+                            g.log('🏩 Серв-медсестра устала и отказывается вас принимать. Приходите в следующий раз.', 'info');
+                            return;
+                        }
+                        g.locationVisits.brothel++;
+                        if (Math.random() < 0.2) {
+                            const damage = 1 + Math.floor(Math.random() * 10);
+                            g.player.hp = Math.max(0, g.player.hp - damage);
+                            g.log(`💥 Супердешёвая киберпрофурсетка сломалась! Нанесено ${damage} урона.`, 'enemy');
+                            if (g.player.hp <= 0) { g.updateStats(); gameOver(); return; }
+                        } else {
+                            const gain = 12 + Math.floor(Math.random() * 11);
+                            g.player.hp = Math.min(g.player.hp + gain, g.player.maxHp);
+                            g.log(`🏩 Вы посетили кибербордель. Восстановлено ${gain} HP.`, 'player');
+                        }
+                        g.updateStats();
+                        showLocationMenu();
+                    } },
+                    { text: '💸 Сыграть в карты с контрабандистом', exec: (g) => {
+                        if (g.player.artifacts.length === 0) { g.log('Нет артефактов для ставки.', 'info'); return; }
+                        if (Math.random() < 0.4) {
+                            const art = Object.values(ARTIFACTS)[Math.floor(Math.random() * Object.values(ARTIFACTS).length)];
+                            g.player.artifacts.push({ ...art });
+                            g.log(`🎉 Вы выиграли артефакт: ${art.name}!`, 'artifact');
+                        } else {
+                            const lost = g.player.artifacts.pop();
+                            g.log(`😞 Вы проиграли и потеряли ${lost ? lost.name : 'ничего'}.`, 'enemy');
+                        }
+                        g.updateStats(); g.updateInventory();
+                    } },
+                    { text: '⚔️ Отправиться на поиски врагов', exec: (g) => { g.startBattle(); } }
+                ]
+            },
+            ORACLE: {
+                id: 'oracle',
+                name: '🔮 Оракул Акведука',
+                description: 'Древнее сооружение, где вода течёт сквозь кристаллы. Оракул может предсказать судьбу.',
+                actions: [
+                    { text: '💧 Испить воды из Акведука', exec: (g) => {
+                        if (g.locationVisits.aqueduct >= 3) {
+                            g.log('Оракул отталкивает тебя со словами: ты так всю воду на планете выпьешь, водохлёб.', 'event');
+                            return;
+                        }
+                        g.locationVisits.aqueduct++;
+                        const bonus = 3 + Math.floor(Math.random() * 5);
+                        g.player.tempStrength = (g.player.tempStrength || 0) + bonus;
+                        g.log(`Сила временно увеличена на ${bonus}!`, 'player');
+                        g.updateStats();
+                    } },
+                    { text: '🔮 Задать вопрос Оракулу', exec: (g) => {
+                        if (g.locationVisits.oracleQuestions >= 5) {
+                            g.log('Я утомлена, уходи.', 'event');
+                            return;
+                        }
+                        g.locationVisits.oracleQuestions++;
+                        
+                        const roll = Math.random();
+                        if (roll < 0.1) {
+                            g.player.tempStrength = (g.player.tempStrength || 0) + 1;
+                            g.log('Вы приободрились! Сила временно увеличена на 1.', 'player');
+                        } else if (roll < 0.2) {
+                            g.player.tempStrength = (g.player.tempStrength || 0) - 1;
+                            g.log('Творцы готовят для тебя новое препятствие. Сила временно уменьшена на 1.', 'event');
+                        } else {
+                            const answers = ['Творцы благоволят тебе.', 'Тьма сгущается вокруг тебя.', 'Твой трон будет завоёван.', 'Судьба на твоей стороне.', 'Не доверяй маскам.'];
+                            g.log(`Оракул: "${answers[Math.floor(Math.random()*answers.length)]}"`, 'event');
+                        }
+                        g.updateStats();
+                    } },
+                    { text: '⚔️ Отправиться на поиски врагов', exec: (g) => { g.startBattle(); } }
+                ]
+            },
+            LIVESTOCK: {
+                id: 'livestock',
+                name: '🐄 Животновод',
+                description: 'Ферма по разведению мультикоров и других необычных существ.',
+                actions: [
+                    { text: '🥛 Отдать молочко мультикоровы', exec: (g) => {
+                        const idx = g.player.artifacts.findIndex(a => a.id === 'milk');
+                        if (idx === -1) { g.log('У вас нет Молочка мультикоровы.', 'info'); return; }
+                        
+                        if (g.locationVisits.milkDialog >= 3) {
+                            g.log('🥛 Животновод уже видел этот препарат достаточно. Он просто забирает молочко и лечит вас.', 'info');
+                            g.player.artifacts.splice(idx, 1);
+                            g.player.hp = Math.min(g.player.hp + 25, g.player.maxHp);
+                            g.log('🥛 Восстановлено 25 HP.', 'player');
+                            g.updateStats(); g.updateInventory();
+                            return;
+                        }
+                        
+                        g.locationVisits.milkDialog++;
+                        g.player.artifacts.splice(idx, 1);
+                        g.player.hp = Math.min(g.player.hp + 25, g.player.maxHp);
+                        
+                        g.log('— А!!! Что это за жуткий препарат?!', 'event');
+                        g.log('— Это стимулятор роста для куропаток... не дёргайся, птенчик!', 'event');
+                        g.log('🥛 Животновод вылечил вас на 25 HP.', 'player');
+                        
+                        g.updateStats(); g.updateInventory();
+                    } },
+                    { text: '🐣 Купить яйцо раптуса (50 HP)', exec: (g) => {
+                        if (g.player.hp < 50) { g.log('Недостаточно здоровья.', 'enemy'); return; }
+                        g.player.hp -= 50;
+                        const art = { ...ARTIFACTS.DARK, name: 'Яйцо раптуса', id: 'raptus', use: (p) => { p.extraDamage = 20; } };
+                        g.player.artifacts.push(art);
+                        g.log('🐉 Вы купили Яйцо раптуса! +20 урона в следующей атаке.', 'artifact');
+                        g.updateStats(); g.updateInventory();
+                    } },
+                    { text: '⚔️ Отправиться на поиски врагов', exec: (g) => { g.startBattle(); } }
+                ]
+            },
+            BAZAAR: {
+                id: 'bazaar',
+                name: '🛒 Развал',
+                description: 'Шумный космический базар, где можно найти всё: от артефактов до технологий.',
+                actions: [
+                    { text: '🔍 Поискать редкий артефакт', exec: (g) => {
+                        if (g.locationVisits.bazaarSearch >= 3) {
+                            g.log('🔍 Вы уже всё перекопали. Больше ничего не найти.', 'info');
+                            return;
+                        }
+                        if (g.player.artifacts.length >= 3) { g.log('Инвентарь полон.', 'info'); return; }
+                        g.locationVisits.bazaarSearch++;
+                        if (Math.random() < 0.5) {
+                            g.log('🔍 Вы нашли какую-то ржавую рухлядь.', 'info');
+                        } else {
+                            const art = Object.values(ARTIFACTS)[Math.floor(Math.random() * Object.values(ARTIFACTS).length)];
+                            g.player.artifacts.push({ ...art });
+                            g.log(`🎁 Вы нашли артефакт: ${art.name}!`, 'artifact');
+                        }
+                        g.updateStats(); g.updateInventory();
+                    } },
+                    { text: '💰 Продать артефакт за здоровье', exec: (g) => {
+                        if (g.player.artifacts.length === 0) { g.log('Нет артефактов для продажи.', 'info'); return; }
+                        const sold = g.player.artifacts.pop();
+                        const gain = 15 + Math.floor(Math.random() * 20);
+                        g.player.hp = Math.min(g.player.hp + gain, g.player.maxHp);
+                        g.log(`💊 Продали ${sold.name}, восстановили ${gain} HP.`, 'player');
+                        g.updateStats(); g.updateInventory();
+                    } },
+                    { text: '⚔️ Отправиться на поиски врагов', exec: (g) => { g.startBattle(); } }
+                ]
+            },
+            // 🏛️ ХРАМ — новая локация, доступна начиная со Жнеца
+            TEMPLE: {
+                id: 'temple',
+                name: '🏛️ Храм Тёмной Богини',
+                description: 'Древнее святилище, окутанное фиолетовым туманом. Здесь можно провести запретный ритуал.',
+                actions: [
+                    { text: '🔮 Провести ритуал', exec: (g) => {
+                        // Проверка наличия ингредиентов
+                        const hasDark = g.player.artifacts.some(a => a.id === 'dark');
+                        const hasShashlyk = g.player.artifacts.some(a => a.id === 'shashlyk');
+                        
+                        if (!hasDark || !hasShashlyk) {
+                            g.log('🏛️ Вам нужны ингредиенты для проведения ритуала', 'temple');
+                            showLocationMenu();
+                            return;
+                        }
+                        
+                        // Мини-игра: подтверждение
+                        g.log('🏛️ Ты точно хочешь провести ритуал? Ты можешь погибнуть, а можешь стать Императором!', 'temple');
+                        
+                        const buttons = [
+                            {
+                                text: '🔮 Провести ритуал',
+                                class: 'danger',
+                                action: () => {
+                                    // Удаляем артефакты из инвентаря
+                                    const darkIdx = g.player.artifacts.findIndex(a => a.id === 'dark');
+                                    if (darkIdx !== -1) g.player.artifacts.splice(darkIdx, 1);
+                                    
+                                    const shashlykIdx = g.player.artifacts.findIndex(a => a.id === 'shashlyk');
+                                    if (shashlykIdx !== -1) g.player.artifacts.splice(shashlykIdx, 1);
+                                    
+                                    g.updateInventory();
+                                    
+                                    // Бросок: 50% неудача, 25% гибель, 25% победа
+                                    const roll = Math.random();
+                                    if (roll < 0.5) {
+                                        // 50% — неудача
+                                        g.log('🏛️ Вам не удалось произвести ритуал', 'temple');
+                                        showLocationMenu();
+                                    } else if (roll < 0.75) {
+                                        // 25% — гибель
+                                        g.log('💀 Ритуал поглотил вашу душу... Вы погибли.', 'enemy');
+                                        gameOver();
+                                    } else {
+                                        // 25% — победа
+                                        g.log('👑 Вы стали Императором Галактики! Тёмная Богиня даровала вам власть!', 'event');
+                                        winGame();
+                                    }
+                                }
+                            },
+                            {
+                                text: '🔙 Отказаться',
+                                class: '',
+                                action: () => {
+                                    // Возврат на Станцию космических челноков
+                                    g.currentLocation = LOCATIONS.SHUTTLE;
+                                    g.log('\n📍 Вы вернулись на Станцию космических челноков.', 'location');
+                                    updateStats();
+                                    showLocationMenu();
+                                }
+                            }
+                        ];
+                        showActions(buttons);
+                    } },
+                    { text: '🔙 Вернуться на Станцию', exec: (g) => {
+                        g.currentLocation = LOCATIONS.SHUTTLE;
+                        g.log('\n📍 Вы вернулись на Станцию космических челноков.', 'location');
+                        updateStats();
+                        showLocationMenu();
+                    } }
+                ]
+            }
+        };
+
+        let game = null;
+
+        // 🐹 БРОНЕНОСЕЦ — проверка 5% шанса при переходе на Станцию космических челноков
+        // Срабатывает один раз за игру, начиная с уровня Пирата-Отморозка (enemyIndex >= 1)
+        function checkArmadilloChance() {
+            if (!game) return;
+            if (game.hasArmadillo) return;              // уже есть
+            if (game.armadilloChanceRolled) return;     // шанс уже разыгран
+            if (game.currentLocation.id !== 'shuttle') return;
+            if (game.enemyIndex < 1) return;             // только начиная с Пирата-Отморозка
+
+            game.armadilloChanceRolled = true;          // один раз за игру
+            if (Math.random() < 0.05) {                  // 5%
+                game.hasArmadillo = true;
+                game.log('\n🐹 Вы встретили броненосца Потёмкина! Теперь вы не одни в сражениях.', 'event');
+                updateStats();
+            }
+        }
+
+        // 🐹 БРОНЕНОСЕЦ — атака компаньона
+        function armadilloAttack() {
+            if (!game || !game.hasArmadillo || !game.enemy) return false;
+            const dmg = 8 + Math.floor(Math.random() * 13); // 8–20 урона
+            game.enemy.hp -= dmg;
+            game.log(`🐹 Броненосец Потёмкин атакует врага и наносит ${dmg} урона!`, 'player');
+            if (game.enemy.hp <= 0) {
+                defeatEnemy();
+                return true; // враг повержен
+            }
+            return false;
+        }
+
+        function updateStats() {
+            if (!game) return;
+            const p = game.player;
+            document.getElementById('hpDisplay').textContent = `${p.hp}/${p.maxHp}`;
+            document.getElementById('strengthDisplay').textContent = p.baseStrength + (p.tempStrength || 0);
+            document.getElementById('weaponDisplay').textContent = p.weapon.name;
+            document.getElementById('locationDisplay').textContent = game.currentLocation.name;
+
+            // 🐹 БРОНЕНОСЕЦ — отображение подписи в индикаторе силы
+            const tag = document.getElementById('armadilloTag');
+            if (tag) {
+                if (game.hasArmadillo) {
+                    tag.textContent = ' 🐹Броненосец Потёмкин';
+                    tag.style.display = 'inline';
+                } else {
+                    tag.textContent = '';
+                    tag.style.display = 'none';
+                }
+            }
+
+            updateInventory();
+        }
+
+        function updateInventory() {
+            if (!game) return;
+            const list = document.getElementById('artifactList');
+            const arts = game.player.artifacts;
+            list.innerHTML = arts.length ? arts.map(a => `<span class="item">${a.name}</span>`).join(' ') : '—';
+        }
+
+        function showActions(buttons) {
+            const container = document.getElementById('gameActions');
+            container.innerHTML = '';
+            buttons.forEach(b => {
+                const btn = document.createElement('button');
+                btn.className = `btn ${b.class || ''}`;
+                btn.textContent = b.text;
+                btn.onclick = b.action;
+                container.appendChild(btn);
+            });
+        }
+
+        function startBattle() {
+            if (game.gameOver) return;
+            if (game.forceWin) { winGame(); return; }
+            if (game.enemyIndex >= ENEMIES.length) { winGame(); return; }
+
+            const enemyData = ENEMIES[game.enemyIndex];
+            game.enemy = {
+                ...enemyData,
+                hp: enemyData.hp,
+                maxHp: enemyData.hp,
+                name: enemyData.name,
+                strength: enemyData.strength,
+                events: enemyData.events || []
+            };
+
+            game.player.tempShield = 0;
+            game.player.extraDamage = 0;
+            game.inBattle = true;
+
+            // 🐹 БРОНЕНОСЕЦ — инициализация счётчиков атак на бой
+            game.heroAttackCount = 0;
+            game.armadilloUsedInBattle = false;
+            game.armadilloAttacksDone = 0;
+            if (game.hasArmadillo) {
+                if (game.enemyIndex >= 6) {
+                    // Жнец и выше: 2–3 атаки за бой одновременно с атакой героя
+                    game.armadilloMaxAttacks = 2 + Math.floor(Math.random() * 2); // 2 или 3
+                } else {
+                    // До Жнеца: 1 атака в случайный момент, начиная со 2-й атаки героя
+                    game.armadilloMaxAttacks = 1;
+                }
+            } else {
+                game.armadilloMaxAttacks = 0;
+            }
+
+            game.log(`\n⚔️ Враг: ${game.enemy.name} — ${game.enemy.desc}`, 'enemy');
+            game.log(`❤️ Здоровье врага: ${game.enemy.hp}/${game.enemy.maxHp}`, 'enemy');
+            updateStats();
+
+            if (game.enemy.events && game.enemy.events.length > 0 && Math.random() < 0.4 && !game.inEvent) {
+                triggerEvent(game.enemy.events[Math.floor(Math.random() * game.enemy.events.length)]);
+            } else {
+                showBattleActions();
+            }
+        }
+
+        function triggerEvent(event) {
+            game.inEvent = true;
+            game.log(`\n❓ ${event.question}`, 'event');
+            const buttons = event.answers.map(ans => ({
+                text: ans.text,
+                class: 'event',
+                action: () => {
+                    game.inEvent = false;
+                    ans.effect(game);
+                    updateStats();
+                    if (game.forceWin) { winGame(); return; }
+                    if (game.enemy && game.enemy.hp <= 0) { defeatEnemy(); return; }
+                    if (!game.gameOver) showBattleActions();
+                }
+            }));
+            showActions(buttons);
+        }
+
+        function showBattleActions() {
+            if (game.gameOver) return;
+            if (game.enemy.hp <= 0) { defeatEnemy(); return; }
+            const buttons = [
+                { text: '⚔️ Атаковать', class: 'danger', action: playerAttack },
+                { text: '🛡️ Защититься', class: '', action: playerDefend },
+                { text: '🎒 Использовать артефакт', class: 'success', action: showArtifactMenu },
+                { text: '🏃 Сбежать в локацию', class: 'location-btn', action: () => { game.inBattle = false; showLocationMenu(); } }
+            ];
+            showActions(buttons);
+            updateStats();
+        }
+
+        function playerAttack() {
+            if (game.gameOver) return;
+
+            // 🐹 БРОНЕНОСЕЦ — считаем атаку героя
+            game.heroAttackCount = (game.heroAttackCount || 0) + 1;
+
+            let damage = game.getDamage();
+            game.enemy.hp -= damage;
+            game.log(`💥 Вы нанесли ${damage} урона ${game.enemy.name}.`, 'player');
+            if (game.enemy.hp <= 0) { defeatEnemy(); return; }
+
+            // 🐹 БРОНЕНОСЕЦ — обработка атаки компаньона
+            if (game.hasArmadillo && game.armadilloMaxAttacks > 0) {
+                if (game.enemyIndex < 6) {
+                    // До Жнеца: 1 раз за бой, в случайный момент, начиная со 2-й атаки героя
+                    if (game.heroAttackCount >= 2 && !game.armadilloUsedInBattle) {
+                        // Случайный момент — вероятность срабатывания в каждой атаке, начиная со 2-й
+                        if (Math.random() < 0.5) {
+                            game.armadilloUsedInBattle = true;
+                            if (armadilloAttack()) return; // враг повержен
+                        }
+                    }
+                } else {
+                    // Жнец и выше: 2–3 раза за бой одновременно с атакой героя
+                    if (game.armadilloAttacksDone < game.armadilloMaxAttacks) {
+                        game.armadilloAttacksDone++;
+                        if (armadilloAttack()) return; // враг повержен
+                    }
+                }
+            }
+
+            enemyTurn();
+        }
+
+        function playerDefend() {
+            if (game.gameOver) return;
+            const shield = Math.floor((game.enemy.strength * 0.6) + 5);
+            game.player.tempShield = (game.player.tempShield || 0) + shield;
+            game.log(`🛡️ Защита +${shield}.`, 'player');
+            enemyTurn();
+        }
+
+        function showArtifactMenu() {
+            if (game.gameOver) return;
+            const arts = game.player.artifacts;
+            if (arts.length === 0) { game.log('Нет артефактов.', 'info'); showBattleActions(); return; }
+            const buttons = arts.map((art, idx) => ({
+                text: `💊 ${art.name}`,
+                class: 'success',
+                action: () => {
+                    useArtifactInBattle(art, game);
+                    if (game.gameOver) return; // если игрок умер от тёмного пойла
+                    game.player.artifacts.splice(idx, 1);
+                    updateStats();
+                    enemyTurn();
+                }
+            }));
+            buttons.push({ text: '🔙 Назад', class: '', action: showBattleActions });
+            showActions(buttons);
+        }
+
+        function enemyTurn() {
+            if (game.gameOver) return;
+            if (game.enemy.hp <= 0) { defeatEnemy(); return; }
+            let damage = Math.max(1, game.enemy.strength + Math.floor(Math.random() * 6) - 2);
+            damage = game.applyShield(damage);
+            game.player.hp -= damage;
+            game.log(`💢 ${game.enemy.name} наносит ${damage} урона.`, 'enemy');
+            if (game.player.hp <= 0) { game.player.hp = 0; updateStats(); gameOver(); return; }
+            updateStats();
+            if (game.enemy.hp <= 0) { defeatEnemy(); return; }
+            showBattleActions();
+        }
+
+        // 🐹 БРОНЕНОСЕЦ — вспомогательная функция выдачи нового оружия с показом прироста
+        function giveWeapon(newWeapon) {
+            const oldWeapon = game.player.weapon;
+            const diff = Math.round(newWeapon.avgDamage - oldWeapon.avgDamage);
+            game.player.weapon = newWeapon;
+            game.log(`🗡️ Получен ${newWeapon.name}! Сила урона увеличена на ${diff}!`, 'artifact');
+        }
+
+        function defeatEnemy() {
+            if (game.gameOver) return;
+            game.log(`🎉 ${game.enemy.name} повержен!`, 'player');
+            if (Math.random() < 0.5 && game.player.artifacts.length < 3) {
+                const art = Object.values(ARTIFACTS)[Math.floor(Math.random() * Object.values(ARTIFACTS).length)];
+                if (!game.player.artifacts.some(a => a.id === art.id)) {
+                    game.player.artifacts.push({ ...art });
+                    game.log(`🎁 Найден артефакт: ${art.name}!`, 'artifact');
+                }
+            }
+            if (game.enemyIndex === 1) {
+                // 🔮 АКВЕДУК — разблокировка локации после Пирата-Отморозка
+                game.log('\n🔮 Доступна новая локация: Оракул Акведука. Древние воды ждут вас!', 'location');
+                game.oracleUnlocked = true;
+            }
+            if (game.enemyIndex === 4) {
+                giveWeapon(WEAPONS.ORDIAN_KATLASS);
+            } else if (game.enemyIndex === 6) {
+                giveWeapon(WEAPONS.REAPER_KHOPESH);
+                // 🏛️ ХРАМ — сообщение о новой локации
+                game.log('\n🏛️ Доступна новая локация: Храм Тёмной Богини. Хотите испытать судьбу?', 'temple');
+                game.templeUnlocked = true;
+            } else if (game.enemyIndex === 8) {
+                giveWeapon(WEAPONS.SWORD);
+            }
+            game.enemyIndex++;
+            game.player.tempStrength = 0;
+            game.player.extraDamage = 0;
+            game.player.tempShield = 0;
+            game.inBattle = false;
+            updateStats();
+            if (game.enemyIndex >= ENEMIES.length) { winGame(); return; }
+            game.log('\n📍 Возвращайтесь в локацию, чтобы продолжить путь.', 'system');
+            showLocationMenu();
+        }
+
+        function winGame() {
+            game.gameOver = true;
+            game.log('\n👑 ПОЗДРАВЛЯЮ! Вы завоевали Трон Галактики! Читайте цикл романов на АТ: https://author.today/work/441009 ', 'event');
+            showActions([{ text: '🔄 Играть заново', class: 'success', action: () => location.reload() }]);
+        }
+
+        function gameOver() {
+            game.gameOver = true;
+            game.log('\n💀 Вы погибли. Галактика не узнает вашего имени...', 'enemy');
+            // 🐹 БРОНЕНОСЕЦ — сообщение при гибели героя, если броненосец был с ним
+            if (game.hasArmadillo) {
+                game.log('🐹 Броненосец Потёмкин съедает весь ваш инвентарь с оружием и отправляется искать нового претендента на Трон Галактики', 'event');
+            }
+            showActions([{ text: '🔄 Попробовать снова', class: 'danger', action: () => location.reload() }]);
+        }
+
+        function showLocationMenu() {
+            if (game.gameOver) return;
+            const container = document.getElementById('gameActions');
+            container.innerHTML = '';
+
+            const loc = game.currentLocation;
+            const title = document.createElement('div');
+            title.style.cssText = 'width:100%; text-align:center; font-weight:bold; color:#6ac0ff; padding:8px 0; font-size:1.1rem; text-shadow: 0 0 5px rgba(106, 192, 255, 0.5);';
+            title.textContent = `📍 ${loc.name}`;
+            container.appendChild(title);
+
+            const desc = document.createElement('div');
+            desc.style.cssText = 'width:100%; text-align:center; font-size:0.95rem; color:#8a8a9a; padding:4px 0 12px;';
+            desc.textContent = loc.description;
+            container.appendChild(desc);
+
+            loc.actions.forEach(action => {
+                const btn = document.createElement('button');
+                btn.className = 'btn';
+                btn.textContent = action.text;
+                btn.onclick = () => { action.exec(game); };
+                container.appendChild(btn);
+            });
+
+            const navTitle = document.createElement('div');
+            navTitle.style.cssText = 'width:100%; text-align:center; font-weight:bold; color:#4a9aff; padding:12px 0 6px; font-size:0.95rem;';
+            navTitle.textContent = '── Перейти в локацию ──';
+            container.appendChild(navTitle);
+
+            Object.values(LOCATIONS).forEach(l => {
+                if (l.id === game.currentLocation.id) return;
+                
+                // 🔮 АКВЕДУК — показываем только если локация разблокирована
+                if (l.id === 'oracle' && !game.oracleUnlocked) return;
+                
+                // 🏛️ ХРАМ — показываем только если локация разблокирована
+                if (l.id === 'temple' && !game.templeUnlocked) return;
+                
+                const btn = document.createElement('button');
+                // 🏛️ ХРАМ — особый класс для кнопки храма
+                btn.className = l.id === 'temple' ? 'btn temple-btn' : 'btn location-btn';
+                btn.textContent = l.name;
+                btn.onclick = () => {
+                    game.currentLocation = l;
+                    game.locationVisits = {
+                        brothel: 0,
+                        milkDialog: 0,
+                        bazaarSearch: 0,
+                        aqueduct: 0,
+                        oracleQuestions: 0
+                    };
+                    game.log(`\n📍 Переход в локацию: ${l.name}`, 'location');
+                    // 🐹 БРОНЕНОСЕЦ — проверяем шанс при каждом переходе
+                    checkArmadilloChance();
+                    updateStats();
+                    showLocationMenu();
+                };
+                container.appendChild(btn);
+            });
+        }
+
+        function initGame() {
+            game = {
+                player: {
+                    hp: 100,
+                    maxHp: 100,
+                    baseStrength: 10,
+                    tempStrength: 0,
+                    extraDamage: 0,
+                    tempShield: 0,
+                    weapon: WEAPONS.SHOVEL,
+                    artifacts: [],
+                },
+                enemyIndex: 0,
+                enemy: null,
+                inEvent: false,
+                inBattle: false,
+                forceWin: false,
+                gameOver: false,
+                currentLocation: LOCATIONS.SHUTTLE,
+                locationVisits: {
+                    brothel: 0,
+                    milkDialog: 0,
+                    bazaarSearch: 0,
+                    aqueduct: 0,
+                    oracleQuestions: 0
+                },
+                // 🐹 БРОНЕНОСЕЦ — поля состояния
+                hasArmadillo: false,              // получен ли броненосец
+                armadilloChanceRolled: false,     // разыгран ли 5% шанс (один раз за игру)
+                heroAttackCount: 0,               // счётчик атак героя в текущем бою
+                armadilloUsedInBattle: false,     // использован ли броненосец в бою (для уровней < Жнеца)
+                armadilloMaxAttacks: 0,           // максимум атак броненосца в бою
+                armadilloAttacksDone: 0,          // выполнено атак броненосца в бою
+                // 🏛️ ХРАМ — поле состояния
+                templeUnlocked: false,            // разблокирована ли локация Храм
+                // 🔮 АКВЕДУК — поле состояния
+                oracleUnlocked: false,            // разблокирована ли локация Оракул Акведука
+                log: (msg, type = 'info') => {
+                    const output = document.getElementById('gameOutput');
+                    const p = document.createElement('div');
+                    p.className = type;
+                    p.textContent = msg;
+                    output.appendChild(p);
+                    output.scrollTop = output.scrollHeight;
+                },
+                getDamage: function() {
+                    let base = this.player.weapon.damage();
+                    let total = base + (this.player.tempStrength || 0) + (this.player.extraDamage || 0);
+                    if (this.player.extraDamage > 0) this.player.extraDamage = 0;
+                    return Math.max(1, total);
+                },
+                applyShield: function(damage) {
+                    let shield = this.player.tempShield || 0;
+                    let reduced = Math.max(0, damage - shield);
+                    this.player.tempShield = 0;
+                    return reduced;
+                },
+                updateStats: updateStats,
+                updateInventory: updateInventory,
+                startBattle: startBattle,
+                showLocationMenu: showLocationMenu,
+                showBattleActions: showBattleActions,
+                defeatEnemy: defeatEnemy
+            };
+
+            document.getElementById('gameOutput').innerHTML = '';
+            game.log('🌌 Добро пожаловать в галактику! Планета Гербера, жуткое захолустье', 'system');
+            game.log('🛠️ Ваше оружие: Сапёрная Лопатка. Получайте новое оружие, побеждая врагов!', 'info');
+            game.log(`📍 Вы на ${game.currentLocation.name}. Исследуйте локации и сражайтесь с врагами!`, 'location');
+            updateStats();
+            showLocationMenu();
+
+            // 📱 МОБИЛЬНАЯ ВЕРСИЯ — обработчик кнопки
+            document.getElementById('mobileBtn').onclick = () => {
+                document.body.classList.toggle('mobile-mode');
+                const btn = document.getElementById('mobileBtn');
+                if (document.body.classList.contains('mobile-mode')) {
+                    btn.textContent = '🖥️ Обычная версия';
+                } else {
+                    btn.textContent = '📱 Мобильная версия';
+                }
+            };
+        }
+
+        initGame();
+    </script>
+</body>
