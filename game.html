@@ -301,7 +301,7 @@
                             g.log(`💥 Супердешёвая киберпрофурсетка сломалась! Нанесено ${damage} урона.`, 'enemy');
                             if (g.player.hp <= 0) { g.updateStats(); gameOver(); return; }
                         } else {
-                            const gain = 12 + Math.floor(Math.random() * 11);
+                            const gain = 1 + Math.floor(Math.random() * 18);
                             g.player.hp = Math.min(g.player.hp + gain, g.player.maxHp);
                             g.log(`🏩 Вы посетили кибербордель. Восстановлено ${gain} HP.`, 'player');
                         }
@@ -510,7 +510,7 @@
 
         let game = null;
 
-        // 🐹 БРОНЕНОСЕЦ — проверка 5% шанса при переходе на Станцию космических челноков
+        // 🐹 БРОНЕНОСЕЦ — проверка 10% шанса при переходе на Станцию космических челноков
         // Срабатывает один раз за игру, начиная с уровня Пирата-Отморозка (enemyIndex >= 1)
         function checkArmadilloChance() {
             if (!game) return;
@@ -520,7 +520,7 @@
             if (game.enemyIndex < 1) return;             // только начиная с Пирата-Отморозка
 
             game.armadilloChanceRolled = true;          // один раз за игру
-            if (Math.random() < 0.05) {                  // 5%
+            if (Math.random() < 0.1) {                  // 5%
                 game.hasArmadillo = true;
                 game.log('\n🐹 Вы встретили броненосца Потёмкина! Теперь вы не одни в сражениях.', 'event');
                 updateStats();
