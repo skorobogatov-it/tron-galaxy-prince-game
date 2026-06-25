@@ -228,7 +228,9 @@
             } },
             RAPTUS_EGG: { id: 'raptus', name: 'Яйцо раптуса', desc: 'В бою: +25 силы до конца боя', use: (p) => { p.tempStrength = (p.tempStrength || 0) + 25; } },
             NUCLEAR: { id: 'nuclear', name: 'Ядерный арсенал бабуленьки', desc: 'Мгновенно уничтожает врага, но есть риск самому погибнуть.' },
-            HYACINTH: { id: 'hyacinth', name: 'Гиацинтовая броня', desc: 'Увеличивает максимальное здоровье до 110 до конца игры.' }
+            HYACINTH: { id: 'hyacinth', name: 'Гиацинтовая броня', desc: 'Увеличивает максимальное здоровье до 110 до конца игры.' },
+            // НОВЫЙ АРТЕФАКТ
+            BRAINS: { id: 'brains', name: 'Мозги высшего серва', desc: 'В бою: бесполезны, но противник удивлён.', use: (p) => {} } // эффект прописан отдельно
         };
 
         const WEAPONS = {
@@ -256,10 +258,24 @@
             { id:9, name:'ГЕНА ГЕНОЦИД', hp:180, strength:28, desc:'Босс Ордынцев. Гигантское существо из чистой энергии ненависти, способное уничтожать целые миры.', events:[{ question:'Гена Геноцид заряжает свой аннигиляционный луч. Укрыться или атаковать?', answers:[{ text:'Укрыться за энергетическим щитом', effect:(g)=>{ g.player.tempShield=20; g.log('🛡️ Вы укрылись за щитом, защита +20.', 'player'); } }, { text:'Атаковать в ядро энергии', effect:(g)=>{ const dmg=g.getDamage()+12; g.enemy.hp-=dmg; g.log(`🎯 Вы попали в ядро и нанесли ${dmg} урона!`, 'player'); } } ] }] }
         ];
 
+        // Функция для случайного артефакта (ИСКЛЮЧАЕТ brains, nuclear, hyacinth)
         function getRandomArtifact(excludeIds = []) {
-            const alwaysExclude = ['nuclear', 'hyacinth'];
+            const alwaysExclude = ['nuclear', 'hyacinth', 'brains']; // brains не выпадает случайно
             const allExclude = [...new Set([...excludeIds, ...alwaysExclude])];
             const available = Object.values(ARTIFACTS).filter(a => !allExclude.includes(a.id));
+            if (available.length === 0) return null;
+            return { ...available[Math.floor(Math.random() * available.length)] };
+        }
+
+        // Отдельная функция для карточного выигрыша – может дать brains
+        function getCardWinningArtifact() {
+            // 30% шанс получить мозги
+            if (Math.random() < 0.3) {
+                return { ...ARTIFACTS.BRAINS };
+            }
+            // иначе обычный артефакт (исключая nuclear, hyacinth, raptus, brains)
+            const exclude = ['nuclear', 'hyacinth', 'raptus', 'brains'];
+            const available = Object.values(ARTIFACTS).filter(a => !exclude.includes(a.id));
             if (available.length === 0) return null;
             return { ...available[Math.floor(Math.random() * available.length)] };
         }
@@ -324,6 +340,9 @@
                 g.player.maxHp = 110;
                 g.player.hp = Math.min(g.player.hp + 10, 110);
                 g.log('🛡️ Гиацинтовая броня активирована! Максимальное здоровье увеличено до 110.', 'player');
+            } else if (art.id === 'brains') {
+                // Мозги высшего серва – бесполезны
+                g.log('🧠 Вы достаёте и кидаете мозги высшего серва в сторону. Противник удивлён.', 'info');
             } else {
                 art.use(g.player);
             }
@@ -368,7 +387,8 @@
                             return;
                         }
                         if (Math.random() < 0.4) {
-                            const art = getRandomArtifact(['raptus']);
+                            // ВЫИГРЫШ – используем специальную функцию, которая может дать мозги
+                            const art = getCardWinningArtifact();
                             if (art) {
                                 g.player.artifacts.push(art);
                                 g.cardWinsThisVisit++;
@@ -379,7 +399,7 @@
                         } else {
                             const lost = g.player.artifacts.pop();
                             if (lost) {
-                                const specialLost = ['raptus', 'hyacinth', 'nuclear'];
+                                const specialLost = ['raptus', 'hyacinth', 'nuclear', 'brains'];
                                 if (specialLost.includes(lost.id)) {
                                     g.log('😈 Хе-хе, хороший выигрыш, не повезло тебе!..', 'enemy');
                                 } else {
@@ -400,9 +420,12 @@
                 description: 'Древнее сооружение, где вода течёт сквозь кристаллы. Оракул может предсказать судьбу.',
                 actions: [
                     { text: '💧 Испить воды из Акведука', exec: (g) => {
-                        const totalStrength = g.player.baseStrength + (g.player.tempStrength || 0);
-                        if (totalStrength >= 70) {
-                            g.log('Оракул отталкивает вас: "Ты слишком силён, вода не для тебя!"', 'event');
+                        let limit = 25;
+                        if (g.enemyIndex >= 8) limit = 60;
+                        else if (g.enemyIndex >= 4) limit = 40;
+                        const currentStrength = g.player.baseStrength + (g.player.tempStrength || 0);
+                        if (currentStrength >= limit) {
+                            g.log(`Ваша сила уже достигла предела для этого этапа (${limit}).`, 'info');
                             return;
                         }
                         if (g.locationVisits.aqueduct >= 3) {
@@ -518,7 +541,7 @@
                         }
 
                         if (roll >= 0.10 && roll < 0.50) {
-                            const art = getRandomArtifact(['raptus']);
+                            const art = getRandomArtifact(['raptus']); // brains, nuclear, hyacinth исключены
                             if (art) {
                                 g.player.artifacts.push(art);
                                 g.log(`🎁 Вы нашли артефакт: ${art.name}!`, 'artifact');
@@ -549,10 +572,11 @@
                 description: 'Древнее святилище на астероиде, окутанное фиолетовым туманом. Здесь можно провести запретный ритуал.',
                 actions: [
                     { text: '🔮 Провести ритуал', exec: (g) => {
+                        // ИСПРАВЛЕНО: теперь нужны dark + brains вместо dark + shashlyk
                         const hasDark = g.player.artifacts.some(a => a.id === 'dark');
-                        const hasShashlyk = g.player.artifacts.some(a => a.id === 'shashlyk');
-                        if (!hasDark || !hasShashlyk) {
-                            g.log('🏛️ Вам нужны ингредиенты для проведения ритуала', 'temple');
+                        const hasBrains = g.player.artifacts.some(a => a.id === 'brains');
+                        if (!hasDark || !hasBrains) {
+                            g.log('🏛️ Вам нужны ингредиенты для проведения ритуала: Бутылка тёмного пойла и Мозги высшего серва.', 'temple');
                             showLocationMenu();
                             return;
                         }
@@ -562,10 +586,11 @@
                                 text: '🔮 Провести ритуал',
                                 class: 'danger',
                                 action: () => {
+                                    // Удаляем dark и brains
                                     const darkIdx = g.player.artifacts.findIndex(a => a.id === 'dark');
                                     if (darkIdx !== -1) g.player.artifacts.splice(darkIdx, 1);
-                                    const shashlykIdx = g.player.artifacts.findIndex(a => a.id === 'shashlyk');
-                                    if (shashlykIdx !== -1) g.player.artifacts.splice(shashlykIdx, 1);
+                                    const brainsIdx = g.player.artifacts.findIndex(a => a.id === 'brains');
+                                    if (brainsIdx !== -1) g.player.artifacts.splice(brainsIdx, 1);
                                     g.updateInventory();
                                     const roll = Math.random();
                                     if (roll < 0.5) {
@@ -803,13 +828,11 @@
             output.scrollTop = output.scrollHeight;
         }
 
-        // === НОВАЯ ФУНКЦИЯ: урон от врага при применении артефакта ===
         function enemyArtifactAttack(g) {
             if (!g.enemy) return;
-            // Урон = случайное число от 1 до половины силы врага (минимум 1)
             let maxDamage = Math.max(1, Math.floor(g.enemy.strength / 2));
             let damage = Math.floor(Math.random() * maxDamage) + 1;
-            damage = g.applyShield(damage); // учитываем щит
+            damage = g.applyShield(damage);
             g.player.hp -= damage;
             g.log(`💢 ${g.enemy.name} наносит ${damage} урона от применения артефакта!`, 'enemy');
             if (g.player.hp <= 0) {
@@ -930,22 +953,16 @@
                 text: `💊 ${art.name}`,
                 class: 'success',
                 action: () => {
-                    // Применяем эффект артефакта
                     useArtifactInBattle(art, game);
                     if (game.gameOver) return;
-                    // Удаляем артефакт из инвентаря
                     game.player.artifacts.splice(idx, 1);
                     updateStats();
-
-                    // Проверяем, жив ли враг
                     if (game.enemy && game.enemy.hp <= 0) {
                         defeatEnemy();
                     } else {
-                        // Если это не ядерный арсенал, враг наносит урон от половины силы
                         if (art.id !== 'nuclear') {
                             enemyArtifactAttack(game);
                         }
-                        // Показываем боевые действия, если игра не окончена
                         if (!game.gameOver) {
                             showBattleActions();
                         }
@@ -980,19 +997,26 @@
             if (game.gameOver) return;
             game.log(`🎉 ${game.enemy.name} повержен!`, 'player');
 
+            if (game.enemyIndex === 6) {
+                game.player.baseStrength = Math.max(game.player.baseStrength, 15);
+                game.log('👑 Вы победили Жнеца и стали Суперадминистратором! Ваша сила выросла!', 'event');
+            }
+
             if (game.mansionAvailable) {
                 game.mansionVisitedThisRound = false;
             }
 
+            // Шанс получить артефакт после победы (исключая brains, nuclear, hyacinth, raptus)
             if (Math.random() < 0.5 && game.player.artifacts.length < 3) {
-                const art = getRandomArtifact(['raptus']);
+                const art = getRandomArtifact(['raptus']); // brains уже исключён
                 if (art && !game.player.artifacts.some(a => a.id === art.id)) {
                     game.player.artifacts.push(art);
                     game.log(`🎁 Найден артефакт: ${art.name}!`, 'artifact');
                 }
             }
 
-            if (game.enemyIndex >= 3 && !game.mansionAvailable && Math.random() < 0.5) {
+            // Открытие особняка
+            if (game.enemyIndex >= 3 && game.enemyIndex <= 5 && !game.mansionAvailable && Math.random() < 0.5) {
                 game.mansionAvailable = true;
                 game.mansionVisitedThisRound = false;
                 game.log('\n🏛️ Вы откопали засыпанный песком особняк в мавританском стиле!', 'location');
