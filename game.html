@@ -686,7 +686,6 @@
                     {
                         text: '🚪 Выйти из особняка',
                         exec: (g) => {
-                            // Выходим на станцию, но особняк остаётся доступным
                             g.currentLocation = LOCATIONS.SHUTTLE;
                             g.log('\n📍 Вы вышли на Станцию космических челноков.', 'location');
                             g.cardWinsThisVisit = 0;
@@ -804,6 +803,23 @@
             output.scrollTop = output.scrollHeight;
         }
 
+        // === НОВАЯ ФУНКЦИЯ: урон от врага при применении артефакта ===
+        function enemyArtifactAttack(g) {
+            if (!g.enemy) return;
+            // Урон = случайное число от 1 до половины силы врага (минимум 1)
+            let maxDamage = Math.max(1, Math.floor(g.enemy.strength / 2));
+            let damage = Math.floor(Math.random() * maxDamage) + 1;
+            damage = g.applyShield(damage); // учитываем щит
+            g.player.hp -= damage;
+            g.log(`💢 ${g.enemy.name} наносит ${damage} урона от применения артефакта!`, 'enemy');
+            if (g.player.hp <= 0) {
+                g.player.hp = 0;
+                g.updateStats();
+                gameOver();
+            }
+            g.updateStats();
+        }
+
         function startBattle() {
             if (game.gameOver) return;
             if (game.forceWin) { winGame(); return; }
@@ -914,14 +930,25 @@
                 text: `💊 ${art.name}`,
                 class: 'success',
                 action: () => {
+                    // Применяем эффект артефакта
                     useArtifactInBattle(art, game);
                     if (game.gameOver) return;
+                    // Удаляем артефакт из инвентаря
                     game.player.artifacts.splice(idx, 1);
                     updateStats();
+
+                    // Проверяем, жив ли враг
                     if (game.enemy && game.enemy.hp <= 0) {
                         defeatEnemy();
                     } else {
-                        enemyTurn();
+                        // Если это не ядерный арсенал, враг наносит урон от половины силы
+                        if (art.id !== 'nuclear') {
+                            enemyArtifactAttack(game);
+                        }
+                        // Показываем боевые действия, если игра не окончена
+                        if (!game.gameOver) {
+                            showBattleActions();
+                        }
                     }
                 }
             }));
@@ -953,7 +980,6 @@
             if (game.gameOver) return;
             game.log(`🎉 ${game.enemy.name} повержен!`, 'player');
 
-            // После победы, если особняк уже открыт, разрешаем посещение (сбрасываем флаг)
             if (game.mansionAvailable) {
                 game.mansionVisitedThisRound = false;
             }
@@ -966,10 +992,9 @@
                 }
             }
 
-            // Откапываем особняк (если ещё не открыт) после победы над Кислотным бароном (индекс 3)
             if (game.enemyIndex >= 3 && !game.mansionAvailable && Math.random() < 0.5) {
                 game.mansionAvailable = true;
-                game.mansionVisitedThisRound = false; // можно зайти сразу после боя
+                game.mansionVisitedThisRound = false;
                 game.log('\n🏛️ Вы откопали засыпанный песком особняк в мавританском стиле!', 'location');
             }
 
@@ -1068,7 +1093,6 @@
                 container.appendChild(btn);
             });
 
-            // Кнопка особняка – показываем, если открыт
             if (game.mansionAvailable) {
                 const mansionBtn = document.createElement('button');
                 mansionBtn.className = 'btn location-btn';
@@ -1076,13 +1100,11 @@
                 mansionBtn.onclick = () => {
                     if (game.mansionVisitedThisRound) {
                         game.log('🏛️ Вы уже были здесь сегодня.', 'info');
-                        // Возвращаем на станцию
                         game.currentLocation = LOCATIONS.SHUTTLE;
                         updateStats();
                         showLocationMenu();
                         return;
                     }
-                    // Заходим в особняк
                     game.mansionVisitedThisRound = true;
                     game.currentLocation = LOCATIONS.MANSION;
                     game.log('\n🏛️ Вы вошли в особняк.', 'location');
@@ -1128,8 +1150,8 @@
                 oracleUnlocked: false,
                 nuclearAcquired: false,
                 hyacinthAcquired: false,
-                mansionAvailable: false,      // открыт ли особняк
-                mansionVisitedThisRound: false, // посещён ли после текущего боя
+                mansionAvailable: false,
+                mansionVisitedThisRound: false,
                 mansionStorage: [],
                 mansionSlept: false,
                 cardWinsThisVisit: 0,
