@@ -2,6 +2,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Трон галактики будет моим!</title>
+    <!-- Подключаем шрифт Nunito (круглый) -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet">
     <style>
         * {
             box-sizing: border-box;
@@ -11,7 +13,7 @@
         body {
             background: linear-gradient(180deg, #0a0a1a 0%, #1a1a2e 30%, #4a2c1a 70%, #d4760a 100%);
             color: #e0d0b0;
-            font-family: 'Courier New', monospace;
+            font-family: 'Nunito', sans-serif; /* изменён шрифт */
             display: flex;
             justify-content: center;
             align-items: center;
@@ -108,7 +110,7 @@
             color: #e0d0b0;
             padding: 12px 24px;
             border-radius: 4px;
-            font-family: inherit;
+            font-family: 'Nunito', sans-serif; /* изменён шрифт кнопок */
             font-size: 1rem;
             cursor: pointer;
             transition: all 0.2s;
@@ -170,6 +172,24 @@
         .game-wrapper { max-width: 950px; margin: 0 auto; padding: 20px 20px 100px; box-sizing: border-box; position: relative; z-index: 1; }
         footer, .footer, .t-footer { position: relative; z-index: 0; }
         @media (max-width: 600px) { .game-wrapper { padding: 15px 15px 80px; } }
+        /* стиль для финальной ссылки */
+        .final-link {
+            margin-top: 16px;
+            padding: 12px;
+            background: rgba(20, 20, 40, 0.8);
+            border: 1px solid #d4760a;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+        .final-link a {
+            color: #ffd700;
+            text-decoration: underline;
+            font-weight: bold;
+        }
+        .final-link a:hover {
+            color: #ffffff;
+        }
     </style>
 </head>
 <body>
@@ -207,8 +227,9 @@
                 p.tempStrength = (p.tempStrength || 0) + strBonus;
                 p.hp -= hpLoss;
             } },
-            RAPTUS_EGG: { id: 'raptus', name: 'Яйцо раптуса', desc: 'В бою: +20 урона в следующей атаке', use: (p) => { p.extraDamage = 20; } },
-            NUCLEAR: { id: 'nuclear', name: 'Ядерный арсенал бабуленьки', desc: 'Мгновенно уничтожает врага, но есть риск самому погибнуть.' }
+            RAPTUS_EGG: { id: 'raptus', name: 'Яйцо раптуса', desc: 'В бою: +25 силы до конца боя', use: (p) => { p.tempStrength = (p.tempStrength || 0) + 25; } },
+            NUCLEAR: { id: 'nuclear', name: 'Ядерный арсенал бабуленьки', desc: 'Мгновенно уничтожает врага, но есть риск самому погибнуть.' },
+            HYACINTH: { id: 'hyacinth', name: 'Гиацинтовая броня', desc: 'Увеличивает максимальное здоровье до 110 до конца игры.' }
         };
 
         const WEAPONS = {
@@ -219,21 +240,26 @@
         };
 
         const ENEMIES = [
-            { id:0, name:'ОДНОНОГИЙ СЕРВ', hp:30, strength:5, desc:'Древний робот-слуга на одной ноге, скрипит и шатается.', events:[{ question:'Серв протягивает вам маслёнку. Принять?', answers:[{ text:'смазать свою броню', effect:(g)=>{ g.player.hp=Math.min(g.player.hp+10, g.player.maxHp); g.log('💧 Вы смазали шарниры космоброни, восстановили 10 HP.', 'player'); } }, { text:'Отказаться', effect:(g)=>{ g.log('Вы вежливо отказались.', 'info'); } } ] }] },
+            { id:0, name:'ОДНОНОГИЙ СЕРВ', hp:30, strength:5, desc:'Древний робот-слуга на одной ноге, скрипит и шатается.', events:[{ question:'Серв протягивает вам маслёнку. Принять?', answers:[{ text:'смазать свою броню', effect:(g)=>{ g.player.tempStrength = (g.player.tempStrength || 0) + 5; g.log('💧 Вы смазали шарниры своей брони и стали проворнее, +5 силы до конца боя.', 'player'); } }, { text:'Отказаться', effect:(g)=>{ g.log('Вы вежливо отказались.', 'info'); } } ] }] },
             { id:1, name:'ПИРАТ-ОТМОРОЗОК', hp:40, strength:8, desc:'Космический пират с бластером и крюком вместо руки.', events:[{ question:'Пират целится в вас из бластера. Ваши действия?', answers:[{ text:'Увернуться в сторону', effect:(g)=>{ g.player.tempShield=8; g.log('🛡️ Вы увернулись, следующий урон уменьшен на 8.', 'player'); } }, { text:'Атаковать в ответ', effect:(g)=>{ const dmg=g.getDamage(); g.enemy.hp-=dmg; g.log(`⚡ Вы нанесли ${dmg} урона пирату!`, 'player'); } } ] }] },
             { id:2, name:'МАСТЕР НИКТО', hp:50, strength:10, desc:'Таинственный мастер в чёрном плаще, лицо скрыто.', events:[{ question:'Мастер предлагает сделку: отдайте артефакт, получите силу. Согласиться?', answers:[{ text:'Согласиться (потерять артефакт, +5 силы)', effect:(g)=>{ if(g.player.artifacts.length>0){ const removed=g.player.artifacts.pop(); g.player.tempStrength=(g.player.tempStrength||0)+5; g.log(`Вы отдали ${removed.name} и получили +5 силы.`, 'artifact'); } else { g.log('У вас нет артефактов! Сделка сорвана.', 'info'); } } }, { text:'Отказаться', effect:(g)=>{ g.log('Мастер скрежещет зубами.', 'info'); } } ] }] },
             { id:3, name:'КИСЛОТНЫЙ БАРОН', hp:60, strength:12, desc:'С установкой, распыляющей кислоту, которая шипит и разъедает пол.', events:[{ question:'Кислота разливается по полу! Куда бежать?', answers:[{ text:'Налево', effect:(g)=>{ g.player.hp-=8; g.log('💥 Вы попали в лужу кислоты, потеряли 8 HP.', 'enemy'); } }, { text:'Направо', effect:(g)=>{ g.log('Вы удачно ускользнули от кислоты.', 'player'); } } ] }] },
             { id:4, name:'БАРОН ЦЕРБЕРОВ', hp:70, strength:14, desc:'Узурпатор планеты со своими цепными псами, каждый лает по-своему.', events:[{ question:'Барон Церберов атакует тебя тремя штурмовыми челноками. Ваши действия?', answers:[{ text:'Уклониться', effect:(g)=>{ g.player.tempShield=10; g.log('🛡️ Вы уклонились от челноков, защита +10.', 'player'); } }, { text:'Атаковать', effect:(g)=>{ const dmg=g.getDamage(); g.enemy.hp-=dmg; g.log(`⚡ Вы атаковали и нанесли ${dmg} урона!`, 'player'); } } ] }] },
-            { id:5, name:'ПРИНЦ-КАДЕТ', hp:65, strength:13, desc:'Молодой принц со здоровенным мечом, но сомневается в своём деле.', events:[{ question:'Принц просит пощады, обещает награду. Что делать?', answers:[{ text:'Пощадить', effect:(g)=>{ if(g.player.artifacts.length<3){ const art={...ARTIFACTS.WATER}; g.player.artifacts.push(art); g.log('🎁 Принц даёт вам Водичку из Акведука!', 'artifact'); } else { g.log('У вас нет места для артефакта.', 'info'); } } }, { text:'Убить (нанести урон)', effect:(g)=>{ const dmg=g.getDamage(); g.enemy.hp-=dmg; g.log(`⚔️ Вы нанесли ${dmg} урона принцу.`, 'player'); } } ] }] },
+            { id:5, name:'ДРУГОЙ ПРИНЦ-ПРЕТЕНДЕНТ', hp:65, strength:13, desc:'Другой принц-претендент со здоровенным мечом, в глазах виден испуг.', events:[{ question:'Принц просит пощады, обещает награду. Что делать?', answers:[{ text:'Пощадить', effect:(g)=>{ 
+                g.log('👑 Принц-кадет говорит: "Ха, ты поверил мне! Получи!"', 'enemy');
+                g.player.hp -= 15;
+                if (g.player.hp <= 0) { g.player.hp = 0; g.updateStats(); gameOver(); return; }
+                g.updateStats();
+            } }, { text:'Убить (нанести урон)', effect:(g)=>{ const dmg=g.getDamage(); g.enemy.hp-=dmg; g.log(`⚔️ Вы нанесли ${dmg} урона принцу.`, 'player'); } } ] }] },
             { id:6, name:'ЖНЕЦ', hp:80, strength:16, desc:'Сверхмощный адепт Энергии Большого Взрыва, собирающее души. В его глазах пустота.', events:[{ question:'Жнец заносит косу для смертельного удара. Ваши действия?', answers:[{ text:'Применить Энергию Большого Взрыва', effect:(g)=>{ g.player.tempShield=10; g.log('🛡️ Вы блокируете удар, защита +10.', 'player'); } }, { text:'Уклониться', effect:(g)=>{ g.log('Вы применили практику микрощита!', 'player'); } } ] }] },
             { id:7, name:'ОРДЫНСКИЙ НЕКРОДЕСАНТНИК', hp:90, strength:18, desc:'Хрящезадая тварь в тяжелом штурмовом костюме, с плазмометом и мечом.', events:[{ question:'Некродесантник призывает подкрепление. Уничтожить призыв?', answers:[{ text:'Применить ударную волну', effect:(g)=>{ const dmg=g.getDamage(); g.enemy.hp-=dmg; g.log(`⚡ Вы разметали прибывших приспешников и нанесли ${dmg} урона.`, 'player'); } }, { text:'Игнорировать', effect:(g)=>{ g.player.hp-=10; g.log('💀 Подкрепление атакует, потеряли 10 HP.', 'enemy'); } } ] }] },
-            { id:8, name:'ИМПЕРАТОР', hp:100, strength:20, desc:'Правитель галактики, в сияющей броне и с энергетическим скипетром.', events:[{ question:'Император предлагает вам титул главнокомандующего. Согласиться?', answers:[{ text:'Согласиться (победить, но без славы)', effect:(g)=>{ g.log('😔 Вы согласились на сделку. Император остаётся у власти, но вы получаете титул Главнокомандующего. Игра завершена.', 'info'); g.forceWin=true; } }, { text:'Отказаться и биться до конца', effect:(g)=>{ g.log('🔥 Рокош! Вы бросаете вызов императору!', 'event'); } } ] }] },
-            { id:9, name:'ГЕНА ГЕНОЦИД', hp:150, strength:28, desc:'Босс Ордынцев. Гигантское существо из чистой энергии ненависти, способное уничтожать целые миры.', events:[{ question:'Гена Геноцид заряжает свой аннигиляционный луч. Укрыться или атаковать?', answers:[{ text:'Укрыться за энергетическим щитом', effect:(g)=>{ g.player.tempShield=20; g.log('🛡️ Вы укрылись за щитом, защита +20.', 'player'); } }, { text:'Атаковать в ядро энергии', effect:(g)=>{ const dmg=g.getDamage()+12; g.enemy.hp-=dmg; g.log(`🎯 Вы попали в ядро и нанесли ${dmg} урона!`, 'player'); } } ] }] }
+            { id:8, name:'ИМПЕРАТОР', hp:120, strength:20, desc:'Правитель галактики, в сияющей броне и с энергетическим скипетром.', events:[{ question:'Император предлагает вам титул главнокомандующего. Согласиться?', answers:[{ text:'Согласиться (победить, но без славы)', effect:(g)=>{ g.log('😔 Вы согласились на сделку. Император остаётся у власти, но вы получаете титул Главнокомандующего. Игра завершена.', 'info'); g.forceWin=true; } }, { text:'Отказаться и биться до конца', effect:(g)=>{ g.log('🔥 Рокош! Вы бросаете вызов императору!', 'event'); } } ] }] },
+            { id:9, name:'ГЕНА ГЕНОЦИД', hp:180, strength:28, desc:'Босс Ордынцев. Гигантское существо из чистой энергии ненависти, способное уничтожать целые миры.', events:[{ question:'Гена Геноцид заряжает свой аннигиляционный луч. Укрыться или атаковать?', answers:[{ text:'Укрыться за энергетическим щитом', effect:(g)=>{ g.player.tempShield=20; g.log('🛡️ Вы укрылись за щитом, защита +20.', 'player'); } }, { text:'Атаковать в ядро энергии', effect:(g)=>{ const dmg=g.getDamage()+12; g.enemy.hp-=dmg; g.log(`🎯 Вы попали в ядро и нанесли ${dmg} урона!`, 'player'); } } ] }] }
         ];
 
-        // Вспомогательная функция для получения случайного артефакта (исключая nuclear всегда, и дополнительно переданные id)
+        // Вспомогательная функция для получения случайного артефакта (исключая nuclear, hyacinth и дополнительно переданные id)
         function getRandomArtifact(excludeIds = []) {
-            const alwaysExclude = ['nuclear'];
+            const alwaysExclude = ['nuclear', 'hyacinth']; // эти артефакты не выпадают случайно
             const allExclude = [...new Set([...excludeIds, ...alwaysExclude])];
             const available = Object.values(ARTIFACTS).filter(a => !allExclude.includes(a.id));
             if (available.length === 0) return null;
@@ -281,8 +307,8 @@
                     return;
                 }
             } else if (art.id === 'raptus') {
-                g.player.extraDamage = 20;
-                g.log('🥚 Яйцо раптуса даёт +20 урона в следующей атаке!', 'artifact');
+                g.player.tempStrength = (g.player.tempStrength || 0) + 25;
+                g.log('🥚 Яйцо раптуса даёт +25 силы до конца боя!', 'artifact');
             } else if (art.id === 'nuclear') {
                 g.log('💥 Ядерный арсенал бабуленьки активирован! Враг уничтожен!', 'artifact');
                 g.enemy.hp = 0;
@@ -292,6 +318,14 @@
                     g.updateStats();
                     gameOver();
                 }
+            } else if (art.id === 'hyacinth') {
+                if (g.player.maxHp >= 110) {
+                    g.log('🛡️ Гиацинтовая броня уже активирована.', 'info');
+                    return;
+                }
+                g.player.maxHp = 110;
+                g.player.hp = Math.min(g.player.hp + 10, 110);
+                g.log('🛡️ Гиацинтовая броня активирована! Максимальное здоровье увеличено до 110.', 'player');
             } else {
                 art.use(g.player);
             }
@@ -329,7 +363,8 @@
                     { text: '💸 Сыграть в карты с контрабандистом', exec: (g) => {
                         if (g.player.artifacts.length === 0) { g.log('Нет артефактов для ставки.', 'info'); return; }
                         if (Math.random() < 0.4) {
-                            const art = getRandomArtifact([]);
+                            // Выигрыш – исключаем raptus, nuclear и hyacinth (они не выигрываются)
+                            const art = getRandomArtifact(['raptus']);
                             if (art) {
                                 g.player.artifacts.push(art);
                                 g.log(`🎉 Вы выиграли артефакт: ${art.name}!`, 'artifact');
@@ -338,7 +373,16 @@
                             }
                         } else {
                             const lost = g.player.artifacts.pop();
-                            g.log(`😞 Вы проиграли и потеряли ${lost ? lost.name : 'ничего'}.`, 'enemy');
+                            if (lost) {
+                                const specialLost = ['raptus', 'hyacinth', 'nuclear'];
+                                if (specialLost.includes(lost.id)) {
+                                    g.log('😈 Хе-хе, хороший выигрыш, не повезло тебе!..', 'enemy');
+                                } else {
+                                    g.log(`😞 Вы проиграли и потеряли ${lost.name}.`, 'enemy');
+                                }
+                            } else {
+                                g.log('😞 Вы проиграли, но терять нечего.', 'enemy');
+                            }
                         }
                         g.updateStats(); g.updateInventory();
                     } },
@@ -380,7 +424,7 @@
                             g.player.tempStrength = (g.player.tempStrength || 0) - 1;
                             g.log('Творцы готовят для тебя новое препятствие. Сила временно уменьшена на 1.', 'event');
                         } else {
-                            const answers = ['Творцы благоволят тебе.', 'Тьма сгущается вокруг тебя.', 'Твой трон будет завоёван.', 'Судьба на твоей стороне.', 'Не доверяй маскам.'];
+                            const answers = ['Творцы благоволят тебе.', 'Тьма сгущается вокруг тебя.', 'Твой трон будет завоёван.', 'Люди пустыни будут благодарны тебе.', 'Не доверяй Безымянным.'];
                             g.log(`Оракул: "${answers[Math.floor(Math.random()*answers.length)]}"`, 'event');
                         }
                         g.updateStats();
@@ -426,7 +470,7 @@
                             g.player.hp -= 50;
                             const eggArtifact = { ...ARTIFACTS.RAPTUS_EGG };
                             g.player.artifacts.push(eggArtifact);
-                            g.log('Вам удалось украсть яйцо из гнезда, -50 HP, +20 урона в следующей атаке', 'artifact');
+                            g.log('Вам удалось украсть яйцо из гнезда, -50 HP, +25 силы в следующей атаке', 'artifact');
                             if (g.player.hp <= 0) { g.player.hp = 0; g.updateStats(); gameOver(); return; }
                         }
                         g.updateStats();
@@ -448,8 +492,10 @@
                         if (g.player.artifacts.length >= 3) { g.log('Инвентарь полон.', 'info'); return; }
                         g.locationVisits.bazaarSearch++;
 
-                        // Ядерный арсенал – только здесь, 5% шанс (один раз)
-                        if (!g.nuclearAcquired && Math.random() < 0.05) {
+                        const roll = Math.random(); // 0..1
+
+                        // 1) Ядерный арсенал – 5% (если не получен)
+                        if (!g.nuclearAcquired && roll < 0.05) {
                             const nuclear = { ...ARTIFACTS.NUCLEAR };
                             g.player.artifacts.push(nuclear);
                             g.nuclearAcquired = true;
@@ -458,13 +504,31 @@
                             return;
                         }
 
-                        const art = getRandomArtifact(['raptus']); // raptus исключаем, nuclear уже исключён автоматически
-                        if (art) {
-                            g.player.artifacts.push(art);
-                            g.log(`🎁 Вы нашли артефакт: ${art.name}!`, 'artifact');
-                        } else {
-                            g.log('🔍 Вы нашли какую-то ржавую рухлядь.', 'info');
+                        // 2) Гиацинтовая броня – 5% (если не получена) 
+                        if (!g.hyacinthAcquired && roll >= 0.05 && roll < 0.10) {
+                            const hyacinth = { ...ARTIFACTS.HYACINTH };
+                            g.player.artifacts.push(hyacinth);
+                            g.hyacinthAcquired = true;
+                            g.log('💎 Вот это находка! Таинственный браслет, превращающийся в непробиваемую броню, Здоровье +10 до конца игры.', 'artifact');
+                            g.updateStats(); g.updateInventory();
+                            return;
                         }
+
+                        // 3) Обычный артефакт – 40% (диапазон 0.10 – 0.50)
+                        if (roll >= 0.10 && roll < 0.50) {
+                            const art = getRandomArtifact(['raptus']);
+                            if (art) {
+                                g.player.artifacts.push(art);
+                                g.log(`🎁 Вы нашли артефакт: ${art.name}!`, 'artifact');
+                            } else {
+                                g.log('🔍 Вы нашли какую-то ржавую рухлядь.', 'info');
+                            }
+                            g.updateStats(); g.updateInventory();
+                            return;
+                        }
+
+                        // 4) Иначе ничего не найдено (50% шанс)
+                        g.log('🔍 Вы перерыли кучу хлама, но ничего ценного не нашли.', 'info');
                         g.updateStats(); g.updateInventory();
                     } },
                     { text: '💰 Продать артефакт за здоровье', exec: (g) => {
@@ -538,12 +602,11 @@
                     } }
                 ]
             },
-            // ---------- НОВАЯ ЛОКАЦИЯ: ОСОБНЯК ----------
+            // ---------- ОСОБНЯК ----------
             MANSION: {
                 id: 'mansion',
                 name: '🏛️ Особняк в мавританском стиле',
                 description: 'Роскошный особняк, засыпанный песком, но внутри сохранивший былое великолепие. Здесь можно отдохнуть и разобрать вещи.',
-                // Действия (без кнопки боя)
                 actions: [
                     {
                         text: '📦 Положить артефакт на хранение',
@@ -556,7 +619,6 @@
                                 g.log('Личный серв Октавия говорит вам: "Вы уже весь дом завалили своим барахлом, господин рыцарь, вышли бы, размялись..."', 'info');
                                 return;
                             }
-                            // Показываем список артефактов в инвентаре для выбора
                             const buttons = g.player.artifacts.map((art, idx) => ({
                                 text: art.name,
                                 class: 'success',
@@ -566,7 +628,7 @@
                                     g.log(`📥 Вы положили ${removed.name} на хранение.`, 'artifact');
                                     g.updateStats();
                                     g.updateInventory();
-                                    showMansionMenu(); // обновляем меню особняка
+                                    showMansionMenu();
                                 }
                             }));
                             buttons.push({ text: '🔙 Назад', class: '', action: showMansionMenu });
@@ -623,7 +685,7 @@
                         text: '🚪 Выйти из особняка',
                         exec: (g) => {
                             g.currentLocation = LOCATIONS.SHUTTLE;
-                            g.mansionAvailable = false; // особняк закрыт до следующей победы
+                            g.mansionAvailable = false;
                             g.log('\n📍 Вы вышли на Станцию космических челноков.', 'location');
                             updateStats();
                             showLocationMenu();
@@ -704,10 +766,8 @@
             });
         }
 
-        // Отобразить меню особняка (используется внутри действий)
         function showMansionMenu() {
             if (!game || game.currentLocation.id !== 'mansion') return;
-            // Перерисовываем меню особняка
             const loc = LOCATIONS.MANSION;
             const container = document.getElementById('gameActions');
             container.innerHTML = '';
@@ -719,7 +779,6 @@
             desc.style.cssText = 'width:100%; text-align:center; font-size:0.95rem; color:#8a8a9a; padding:4px 0 12px;';
             desc.textContent = loc.description;
             container.appendChild(desc);
-            // Добавляем действия
             loc.actions.forEach(action => {
                 const btn = document.createElement('button');
                 btn.className = 'btn';
@@ -727,11 +786,20 @@
                 btn.onclick = () => { action.exec(game); };
                 container.appendChild(btn);
             });
-            // Показываем количество хранимых предметов
             const storageInfo = document.createElement('div');
             storageInfo.style.cssText = 'width:100%; text-align:center; font-size:0.9rem; color:#8a8a9a; padding-top:8px;';
             storageInfo.textContent = `📦 Хранилище: ${game.mansionStorage.length}/5`;
             container.appendChild(storageInfo);
+        }
+
+        // Функция для вывода финальной ссылки
+        function showFinalLink() {
+            const output = document.getElementById('gameOutput');
+            const div = document.createElement('div');
+            div.className = 'final-link';
+            div.innerHTML = '📖 Читайте цикл романов: <a href="https://author.today/reader/441009" target="_blank">https://author.today/reader/441009</a>';
+            output.appendChild(div);
+            output.scrollTop = output.scrollHeight;
         }
 
         function startBattle() {
@@ -883,26 +951,21 @@
             if (game.gameOver) return;
             game.log(`🎉 ${game.enemy.name} повержен!`, 'player');
 
-            // Шанс получить артефакт после победы (исключая nuclear, но разрешая raptus)
+            // Шанс получить артефакт после победы (исключаем raptus, nuclear, hyacinth)
             if (Math.random() < 0.5 && game.player.artifacts.length < 3) {
-                const art = getRandomArtifact([]);
+                const art = getRandomArtifact(['raptus']);
                 if (art && !game.player.artifacts.some(a => a.id === art.id)) {
                     game.player.artifacts.push(art);
                     game.log(`🎁 Найден артефакт: ${art.name}!`, 'artifact');
                 }
             }
 
-            // Проверка на открытие особняка (начиная с победы над Кислотным бароном, индекс 3)
-            // После победы enemyIndex увеличивается, поэтому проверяем, что новый индекс > 3
-            const nextIndex = game.enemyIndex + 1; // но мы ещё не увеличили
-            // Лучше проверить после увеличения, но мы увеличим позже. Сделаем проверку до увеличения.
-            // Сейчас game.enemyIndex – это индекс побеждённого врага. Если он >= 3, то шанс 50%.
+            // Открытие особняка (после Кислотного барона, индекс 3)
             if (game.enemyIndex >= 3 && !game.mansionAvailable && Math.random() < 0.5) {
                 game.mansionAvailable = true;
                 game.log('\n🏛️ Вы откопали засыпанный песком особняк в мавританском стиле!', 'location');
             }
 
-            // Открытие новых локаций
             if (game.enemyIndex === 1) {
                 game.log('\n🔮 Доступна новая локация: Оракул Акведука. Древние воды ждут вас!', 'location');
                 game.oracleUnlocked = true;
@@ -931,7 +994,9 @@
 
         function winGame() {
             game.gameOver = true;
-            game.log('\n👑 ПОЗДРАВЛЯЮ! Вы завоевали Трон Галактики! Читайте цикл романов на АТ: https://author.today/work/441009 ', 'event');
+            game.log('\n👑 ПОЗДРАВЛЯЮ! Вы завоевали Трон Галактики!', 'event');
+            // выводим ссылку
+            showFinalLink();
             showActions([{ text: '🔄 Играть заново', class: 'success', action: () => location.reload() }]);
         }
 
@@ -941,6 +1006,8 @@
             if (game.hasArmadillo) {
                 game.log('🐹 Броненосец Потёмкин съедает весь ваш инвентарь с оружием и отправляется искать нового претендента на Трон Галактики', 'event');
             }
+            // выводим ссылку
+            showFinalLink();
             showActions([{ text: '🔄 Попробовать снова', class: 'danger', action: () => location.reload() }]);
         }
 
@@ -958,7 +1025,6 @@
             desc.textContent = loc.description;
             container.appendChild(desc);
 
-            // Действия текущей локации
             loc.actions.forEach(action => {
                 const btn = document.createElement('button');
                 btn.className = 'btn';
@@ -967,13 +1033,11 @@
                 container.appendChild(btn);
             });
 
-            // Навигация по локациям (кроме особняка, он появляется отдельно)
             const navTitle = document.createElement('div');
             navTitle.style.cssText = 'width:100%; text-align:center; font-weight:bold; color:#4a9aff; padding:12px 0 6px; font-size:0.95rem;';
             navTitle.textContent = '── Перейти в локацию ──';
             container.appendChild(navTitle);
 
-            // Собираем все локации, кроме текущей и особняка (его добавим условно)
             const otherLocations = Object.values(LOCATIONS).filter(l => l.id !== game.currentLocation.id && l.id !== 'mansion');
             otherLocations.forEach(l => {
                 if (l.id === 'oracle' && !game.oracleUnlocked) return;
@@ -998,19 +1062,17 @@
                 container.appendChild(btn);
             });
 
-            // Если особняк доступен, добавляем кнопку входа
             if (game.mansionAvailable) {
                 const mansionBtn = document.createElement('button');
                 mansionBtn.className = 'btn location-btn';
                 mansionBtn.textContent = '🏛️ Особняк в мавританском стиле';
                 mansionBtn.onclick = () => {
-                    // Переход в особняк, закрываем доступ (можно зайти только один раз)
                     game.mansionAvailable = false;
                     game.currentLocation = LOCATIONS.MANSION;
-                    game.mansionSlept = false; // сброс сна при новом посещении
+                    game.mansionSlept = false;
                     game.log('\n🏛️ Вы вошли в особняк.', 'location');
                     updateStats();
-                    showMansionMenu(); // отображаем меню особняка
+                    showMansionMenu();
                 };
                 container.appendChild(mansionBtn);
             }
@@ -1050,9 +1112,10 @@
                 templeUnlocked: false,
                 oracleUnlocked: false,
                 nuclearAcquired: false,
-                mansionAvailable: false,      // флаг доступности особняка
-                mansionStorage: [],           // хранилище артефактов в особняке (макс 5)
-                mansionSlept: false,          // флаг, спали ли в текущем посещении
+                hyacinthAcquired: false,
+                mansionAvailable: false,
+                mansionStorage: [],
+                mansionSlept: false,
                 log: (msg, type = 'info') => {
                     const output = document.getElementById('gameOutput');
                     const p = document.createElement('div');
@@ -1062,7 +1125,6 @@
                     output.scrollTop = output.scrollHeight;
                 },
                 getDamage: function() {
-                    // ИСПРАВЛЕНО: добавляем baseStrength
                     let base = this.player.weapon.damage();
                     let total = base + this.player.baseStrength + (this.player.tempStrength || 0) + (this.player.extraDamage || 0);
                     if (this.player.extraDamage > 0) this.player.extraDamage = 0;
