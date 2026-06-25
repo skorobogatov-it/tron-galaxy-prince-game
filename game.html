@@ -2,7 +2,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Трон галактики будет моим!</title>
-    <!-- Подключаем шрифт Nunito (круглый) -->
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet">
     <style>
         * {
@@ -13,7 +12,8 @@
         body {
             background: linear-gradient(180deg, #0a0a1a 0%, #1a1a2e 30%, #4a2c1a 70%, #d4760a 100%);
             color: #e0d0b0;
-            font-family: 'Nunito', sans-serif; /* изменён шрифт */
+            font-family: 'Nunito', sans-serif;
+            font-size: 1.1rem;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -110,7 +110,7 @@
             color: #e0d0b0;
             padding: 12px 24px;
             border-radius: 4px;
-            font-family: 'Nunito', sans-serif; /* изменён шрифт кнопок */
+            font-family: 'Nunito', sans-serif;
             font-size: 1rem;
             cursor: pointer;
             transition: all 0.2s;
@@ -172,7 +172,6 @@
         .game-wrapper { max-width: 950px; margin: 0 auto; padding: 20px 20px 100px; box-sizing: border-box; position: relative; z-index: 1; }
         footer, .footer, .t-footer { position: relative; z-index: 0; }
         @media (max-width: 600px) { .game-wrapper { padding: 15px 15px 80px; } }
-        /* стиль для финальной ссылки */
         .final-link {
             margin-top: 16px;
             padding: 12px;
@@ -257,9 +256,8 @@
             { id:9, name:'ГЕНА ГЕНОЦИД', hp:180, strength:28, desc:'Босс Ордынцев. Гигантское существо из чистой энергии ненависти, способное уничтожать целые миры.', events:[{ question:'Гена Геноцид заряжает свой аннигиляционный луч. Укрыться или атаковать?', answers:[{ text:'Укрыться за энергетическим щитом', effect:(g)=>{ g.player.tempShield=20; g.log('🛡️ Вы укрылись за щитом, защита +20.', 'player'); } }, { text:'Атаковать в ядро энергии', effect:(g)=>{ const dmg=g.getDamage()+12; g.enemy.hp-=dmg; g.log(`🎯 Вы попали в ядро и нанесли ${dmg} урона!`, 'player'); } } ] }] }
         ];
 
-        // Вспомогательная функция для получения случайного артефакта (исключая nuclear, hyacinth и дополнительно переданные id)
         function getRandomArtifact(excludeIds = []) {
-            const alwaysExclude = ['nuclear', 'hyacinth']; // эти артефакты не выпадают случайно
+            const alwaysExclude = ['nuclear', 'hyacinth'];
             const allExclude = [...new Set([...excludeIds, ...alwaysExclude])];
             const available = Object.values(ARTIFACTS).filter(a => !allExclude.includes(a.id));
             if (available.length === 0) return null;
@@ -361,12 +359,19 @@
                         showLocationMenu();
                     } },
                     { text: '💸 Сыграть в карты с контрабандистом', exec: (g) => {
-                        if (g.player.artifacts.length === 0) { g.log('Нет артефактов для ставки.', 'info'); return; }
+                        if (g.cardWinsThisVisit >= 3) {
+                            g.log('🃏 Да иди ты к чёрту! Не буду я с тобой больше играть! - говорит контрабандист и злобно глядит на тебя.', 'enemy');
+                            return;
+                        }
+                        if (g.player.artifacts.length === 0) {
+                            g.log('Нет артефактов для ставки.', 'info');
+                            return;
+                        }
                         if (Math.random() < 0.4) {
-                            // Выигрыш – исключаем raptus, nuclear и hyacinth (они не выигрываются)
                             const art = getRandomArtifact(['raptus']);
                             if (art) {
                                 g.player.artifacts.push(art);
+                                g.cardWinsThisVisit++;
                                 g.log(`🎉 Вы выиграли артефакт: ${art.name}!`, 'artifact');
                             } else {
                                 g.log('🎉 Вы выиграли, но ничего ценного не нашли.', 'info');
@@ -492,9 +497,8 @@
                         if (g.player.artifacts.length >= 3) { g.log('Инвентарь полон.', 'info'); return; }
                         g.locationVisits.bazaarSearch++;
 
-                        const roll = Math.random(); // 0..1
+                        const roll = Math.random();
 
-                        // 1) Ядерный арсенал – 5% (если не получен)
                         if (!g.nuclearAcquired && roll < 0.05) {
                             const nuclear = { ...ARTIFACTS.NUCLEAR };
                             g.player.artifacts.push(nuclear);
@@ -504,7 +508,6 @@
                             return;
                         }
 
-                        // 2) Гиацинтовая броня – 5% (если не получена) 
                         if (!g.hyacinthAcquired && roll >= 0.05 && roll < 0.10) {
                             const hyacinth = { ...ARTIFACTS.HYACINTH };
                             g.player.artifacts.push(hyacinth);
@@ -514,7 +517,6 @@
                             return;
                         }
 
-                        // 3) Обычный артефакт – 40% (диапазон 0.10 – 0.50)
                         if (roll >= 0.10 && roll < 0.50) {
                             const art = getRandomArtifact(['raptus']);
                             if (art) {
@@ -527,7 +529,6 @@
                             return;
                         }
 
-                        // 4) Иначе ничего не найдено (50% шанс)
                         g.log('🔍 Вы перерыли кучу хлама, но ничего ценного не нашли.', 'info');
                         g.updateStats(); g.updateInventory();
                     } },
@@ -587,6 +588,7 @@
                                     g.log('\n📍 Вы вернулись на Станцию космических челноков.', 'location');
                                     checkArmadilloChance();
                                     updateStats();
+                                    g.cardWinsThisVisit = 0;
                                     showLocationMenu();
                                 }
                             }
@@ -598,11 +600,11 @@
                         g.log('\n📍 Вы вернулись на Станцию космических челноков.', 'location');
                         checkArmadilloChance();
                         updateStats();
+                        g.cardWinsThisVisit = 0;
                         showLocationMenu();
                     } }
                 ]
             },
-            // ---------- ОСОБНЯК ----------
             MANSION: {
                 id: 'mansion',
                 name: '🏛️ Особняк в мавританском стиле',
@@ -684,9 +686,10 @@
                     {
                         text: '🚪 Выйти из особняка',
                         exec: (g) => {
+                            // Выходим на станцию, но особняк остаётся доступным
                             g.currentLocation = LOCATIONS.SHUTTLE;
-                            g.mansionAvailable = false;
                             g.log('\n📍 Вы вышли на Станцию космических челноков.', 'location');
+                            g.cardWinsThisVisit = 0;
                             updateStats();
                             showLocationMenu();
                         }
@@ -792,7 +795,6 @@
             container.appendChild(storageInfo);
         }
 
-        // Функция для вывода финальной ссылки
         function showFinalLink() {
             const output = document.getElementById('gameOutput');
             const div = document.createElement('div');
@@ -951,7 +953,11 @@
             if (game.gameOver) return;
             game.log(`🎉 ${game.enemy.name} повержен!`, 'player');
 
-            // Шанс получить артефакт после победы (исключаем raptus, nuclear, hyacinth)
+            // После победы, если особняк уже открыт, разрешаем посещение (сбрасываем флаг)
+            if (game.mansionAvailable) {
+                game.mansionVisitedThisRound = false;
+            }
+
             if (Math.random() < 0.5 && game.player.artifacts.length < 3) {
                 const art = getRandomArtifact(['raptus']);
                 if (art && !game.player.artifacts.some(a => a.id === art.id)) {
@@ -960,9 +966,10 @@
                 }
             }
 
-            // Открытие особняка (после Кислотного барона, индекс 3)
+            // Откапываем особняк (если ещё не открыт) после победы над Кислотным бароном (индекс 3)
             if (game.enemyIndex >= 3 && !game.mansionAvailable && Math.random() < 0.5) {
                 game.mansionAvailable = true;
+                game.mansionVisitedThisRound = false; // можно зайти сразу после боя
                 game.log('\n🏛️ Вы откопали засыпанный песком особняк в мавританском стиле!', 'location');
             }
 
@@ -995,7 +1002,6 @@
         function winGame() {
             game.gameOver = true;
             game.log('\n👑 ПОЗДРАВЛЯЮ! Вы завоевали Трон Галактики!', 'event');
-            // выводим ссылку
             showFinalLink();
             showActions([{ text: '🔄 Играть заново', class: 'success', action: () => location.reload() }]);
         }
@@ -1006,7 +1012,6 @@
             if (game.hasArmadillo) {
                 game.log('🐹 Броненосец Потёмкин съедает весь ваш инвентарь с оружием и отправляется искать нового претендента на Трон Галактики', 'event');
             }
-            // выводим ссылку
             showFinalLink();
             showActions([{ text: '🔄 Попробовать снова', class: 'danger', action: () => location.reload() }]);
         }
@@ -1054,6 +1059,7 @@
                         aqueduct: 0,
                         oracleQuestions: 0
                     };
+                    game.cardWinsThisVisit = 0;
                     game.log(`\n📍 Переход в локацию: ${l.name}`, 'location');
                     checkArmadilloChance();
                     updateStats();
@@ -1062,14 +1068,23 @@
                 container.appendChild(btn);
             });
 
+            // Кнопка особняка – показываем, если открыт
             if (game.mansionAvailable) {
                 const mansionBtn = document.createElement('button');
                 mansionBtn.className = 'btn location-btn';
                 mansionBtn.textContent = '🏛️ Особняк в мавританском стиле';
                 mansionBtn.onclick = () => {
-                    game.mansionAvailable = false;
+                    if (game.mansionVisitedThisRound) {
+                        game.log('🏛️ Вы уже были здесь сегодня.', 'info');
+                        // Возвращаем на станцию
+                        game.currentLocation = LOCATIONS.SHUTTLE;
+                        updateStats();
+                        showLocationMenu();
+                        return;
+                    }
+                    // Заходим в особняк
+                    game.mansionVisitedThisRound = true;
                     game.currentLocation = LOCATIONS.MANSION;
-                    game.mansionSlept = false;
                     game.log('\n🏛️ Вы вошли в особняк.', 'location');
                     updateStats();
                     showMansionMenu();
@@ -1113,9 +1128,11 @@
                 oracleUnlocked: false,
                 nuclearAcquired: false,
                 hyacinthAcquired: false,
-                mansionAvailable: false,
+                mansionAvailable: false,      // открыт ли особняк
+                mansionVisitedThisRound: false, // посещён ли после текущего боя
                 mansionStorage: [],
                 mansionSlept: false,
+                cardWinsThisVisit: 0,
                 log: (msg, type = 'info') => {
                     const output = document.getElementById('gameOutput');
                     const p = document.createElement('div');
