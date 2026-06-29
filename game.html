@@ -4,6 +4,7 @@
     <title>Трон галактики будет моим!</title>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet">
     <style>
+        /* (стили без изменений) */
         * {
             box-sizing: border-box;
             margin: 0;
@@ -198,7 +199,7 @@
     <div id="game-wrapper">
         <div id="stats">
             <span>❤️ Здоровье: <span class="value" id="hpDisplay">100/100</span></span>
-            <span>⚔️ Сила: <span class="value" id="strengthDisplay">10</span><span id="armadilloTag" class="armadillo-tag" style="display:none;"></span></span>
+            <span>⚔️ Сила: <span class="value" id="strengthDisplay">8</span><span id="armadilloTag" class="armadillo-tag" style="display:none;"></span></span>
             <span>🔫 Оружие: <span class="value" id="weaponDisplay">Сапёрная Лопатка</span></span>
             <span>📍 Локация: <span class="value" id="locationDisplay">Станция космических челноков</span></span>
             <span>👾 Враг: <span class="value" id="enemyHpDisplay">—</span></span>
@@ -228,9 +229,8 @@
             } },
             RAPTUS_EGG: { id: 'raptus', name: 'Яйцо раптуса', desc: 'В бою: +25 силы до конца боя', use: (p) => { p.tempStrength = (p.tempStrength || 0) + 25; } },
             NUCLEAR: { id: 'nuclear', name: 'Ядерный арсенал бабуленьки', desc: 'Мгновенно уничтожает врага, но есть риск самому погибнуть.' },
-            HYACINTH: { id: 'hyacinth', name: 'Гиацинтовая броня', desc: 'Увеличивает максимальное здоровье до 110 до конца игры.' },
-            // НОВЫЙ АРТЕФАКТ
-            BRAINS: { id: 'brains', name: 'Мозги высшего серва', desc: 'В бою: бесполезны, но противник удивлён.', use: (p) => {} } // эффект прописан отдельно
+            HYACINTH: { id: 'hyacinth', name: 'Гиацинтовая броня', desc: 'Увеличивает максимальное здоровье до 120 до конца игры.' },
+            BRAINS: { id: 'brains', name: 'Мозги высшего серва', desc: 'В бою: бесполезны, но противник удивлён.', use: (p) => {} }
         };
 
         const WEAPONS = {
@@ -258,22 +258,18 @@
             { id:9, name:'ГЕНА ГЕНОЦИД', hp:180, strength:28, desc:'Босс Ордынцев. Гигантское существо из чистой энергии ненависти, способное уничтожать целые миры.', events:[{ question:'Гена Геноцид заряжает свой аннигиляционный луч. Укрыться или атаковать?', answers:[{ text:'Укрыться за энергетическим щитом', effect:(g)=>{ g.player.tempShield=20; g.log('🛡️ Вы укрылись за щитом, защита +20.', 'player'); } }, { text:'Атаковать в ядро энергии', effect:(g)=>{ const dmg=g.getDamage()+12; g.enemy.hp-=dmg; g.log(`🎯 Вы попали в ядро и нанесли ${dmg} урона!`, 'player'); } } ] }] }
         ];
 
-        // Функция для случайного артефакта (ИСКЛЮЧАЕТ brains, nuclear, hyacinth)
         function getRandomArtifact(excludeIds = []) {
-            const alwaysExclude = ['nuclear', 'hyacinth', 'brains']; // brains не выпадает случайно
+            const alwaysExclude = ['nuclear', 'hyacinth', 'brains'];
             const allExclude = [...new Set([...excludeIds, ...alwaysExclude])];
             const available = Object.values(ARTIFACTS).filter(a => !allExclude.includes(a.id));
             if (available.length === 0) return null;
             return { ...available[Math.floor(Math.random() * available.length)] };
         }
 
-        // Отдельная функция для карточного выигрыша – может дать brains
         function getCardWinningArtifact() {
-            // 30% шанс получить мозги
             if (Math.random() < 0.3) {
                 return { ...ARTIFACTS.BRAINS };
             }
-            // иначе обычный артефакт (исключая nuclear, hyacinth, raptus, brains)
             const exclude = ['nuclear', 'hyacinth', 'raptus', 'brains'];
             const available = Object.values(ARTIFACTS).filter(a => !exclude.includes(a.id));
             if (available.length === 0) return null;
@@ -333,15 +329,14 @@
                     gameOver();
                 }
             } else if (art.id === 'hyacinth') {
-                if (g.player.maxHp >= 110) {
+                if (g.player.maxHp >= 120) {
                     g.log('🛡️ Гиацинтовая броня уже активирована.', 'info');
                     return;
                 }
-                g.player.maxHp = 110;
-                g.player.hp = Math.min(g.player.hp + 10, 110);
-                g.log('🛡️ Гиацинтовая броня активирована! Максимальное здоровье увеличено до 110.', 'player');
+                g.player.maxHp = 120;
+                g.player.hp = Math.min(g.player.hp + 10, 120);
+                g.log('🛡️ Гиацинтовая броня активирована! Максимальное здоровье увеличено до 120.', 'player');
             } else if (art.id === 'brains') {
-                // Мозги высшего серва – бесполезны
                 g.log('🧠 Вы достаёте и кидаете мозги высшего серва в сторону. Противник удивлён.', 'info');
             } else {
                 art.use(g.player);
@@ -387,7 +382,6 @@
                             return;
                         }
                         if (Math.random() < 0.4) {
-                            // ВЫИГРЫШ – используем специальную функцию, которая может дать мозги
                             const art = getCardWinningArtifact();
                             if (art) {
                                 g.player.artifacts.push(art);
@@ -423,7 +417,7 @@
                         let limit = 25;
                         if (g.enemyIndex >= 8) limit = 60;
                         else if (g.enemyIndex >= 4) limit = 40;
-                        const currentStrength = g.player.baseStrength + (g.player.tempStrength || 0);
+                        const currentStrength = (g.player.weapon ? g.player.weapon.avgDamage : 8) + (g.player.tempStrength || 0);
                         if (currentStrength >= limit) {
                             g.log(`Ваша сила уже достигла предела для этого этапа (${limit}).`, 'info');
                             return;
@@ -541,7 +535,7 @@
                         }
 
                         if (roll >= 0.10 && roll < 0.50) {
-                            const art = getRandomArtifact(['raptus']); // brains, nuclear, hyacinth исключены
+                            const art = getRandomArtifact(['raptus']);
                             if (art) {
                                 g.player.artifacts.push(art);
                                 g.log(`🎁 Вы нашли артефакт: ${art.name}!`, 'artifact');
@@ -556,12 +550,36 @@
                         g.updateStats(); g.updateInventory();
                     } },
                     { text: '💰 Продать артефакт за здоровье', exec: (g) => {
-                        if (g.player.artifacts.length === 0) { g.log('Нет артефактов для продажи.', 'info'); return; }
-                        const sold = g.player.artifacts.pop();
-                        const gain = 15 + Math.floor(Math.random() * 20);
-                        g.player.hp = Math.min(g.player.hp + gain, g.player.maxHp);
-                        g.log(`💊 Продали ${sold.name}, восстановили ${gain} HP.`, 'player');
-                        g.updateStats(); g.updateInventory();
+                        if (g.player.artifacts.length === 0) {
+                            g.log('Нет артефактов для продажи.', 'info');
+                            return;
+                        }
+                        const buttons = g.player.artifacts.map((art, idx) => ({
+                            text: art.name,
+                            class: 'success',
+                            action: () => {
+                                const sold = g.player.artifacts.splice(idx, 1)[0];
+                                let gain = 0;
+                                let extraMsg = '';
+                                if (['shashlyk', 'water'].includes(sold.id)) {
+                                    gain = 5 + Math.floor(Math.random() * 6);
+                                } else if (['dark', 'raptus', 'brains'].includes(sold.id)) {
+                                    gain = 10 + Math.floor(Math.random() * 6);
+                                } else if (['hyacinth', 'nuclear'].includes(sold.id)) {
+                                    gain = 30 + Math.floor(Math.random() * 21);
+                                    extraMsg = ' "Серьёзно? - лыбится продавец. - Ладно, я покупаю это."';
+                                } else {
+                                    gain = 10 + Math.floor(Math.random() * 10);
+                                }
+                                g.player.hp = Math.min(g.player.hp + gain, g.player.maxHp);
+                                g.log(`💊 Продали ${sold.name}, восстановили ${gain} HP.${extraMsg}`, 'player');
+                                g.updateStats();
+                                g.updateInventory();
+                                showLocationMenu();
+                            }
+                        }));
+                        buttons.push({ text: '🔙 Назад', class: '', action: showLocationMenu });
+                        showActions(buttons);
                     } },
                     { text: '⚔️ Отправиться на поиски врагов', exec: (g) => { g.startBattle(); } }
                 ]
@@ -572,7 +590,6 @@
                 description: 'Древнее святилище на астероиде, окутанное фиолетовым туманом. Здесь можно провести запретный ритуал.',
                 actions: [
                     { text: '🔮 Провести ритуал', exec: (g) => {
-                        // ИСПРАВЛЕНО: теперь нужны dark + brains вместо dark + shashlyk
                         const hasDark = g.player.artifacts.some(a => a.id === 'dark');
                         const hasBrains = g.player.artifacts.some(a => a.id === 'brains');
                         if (!hasDark || !hasBrains) {
@@ -586,7 +603,6 @@
                                 text: '🔮 Провести ритуал',
                                 class: 'danger',
                                 action: () => {
-                                    // Удаляем dark и brains
                                     const darkIdx = g.player.artifacts.findIndex(a => a.id === 'dark');
                                     if (darkIdx !== -1) g.player.artifacts.splice(darkIdx, 1);
                                     const brainsIdx = g.player.artifacts.findIndex(a => a.id === 'brains');
@@ -618,8 +634,25 @@
                                 }
                             }
                         ];
+                        if (g.player.artifacts.some(a => a.id === 'nuclear')) {
+                            buttons.push({
+                                text: '💥 Уничтожить астероид',
+                                class: 'danger',
+                                action: () => {
+                                    const idx = g.player.artifacts.findIndex(a => a.id === 'nuclear');
+                                    if (idx !== -1) g.player.artifacts.splice(idx, 1);
+                                    g.asteroidDestroyed = true;
+                                    g.log('💥 Тысячи обломков разлетелись по космосу. Тёмная Богиня смеётся и медленно растворяется в воздухе.', 'event');
+                                    g.updateStats();
+                                    g.updateInventory();
+                                    g.currentLocation = LOCATIONS.SHUTTLE;
+                                    showLocationMenu();
+                                }
+                            });
+                        }
                         showActions(buttons);
                     } },
+                    { text: '⚔️ Отправиться на поиски врагов', exec: (g) => { g.startBattle(); } },
                     { text: '🔙 Вернуться на Станцию', exec: (g) => {
                         g.currentLocation = LOCATIONS.SHUTTLE;
                         g.log('\n📍 Вы вернулись на Станцию космических челноков.', 'location');
@@ -698,11 +731,10 @@
                             }
                             g.mansionSlept = true;
                             if (Math.random() < 0.5) {
-                                const heal = Math.ceil(g.player.maxHp * 0.1);
-                                g.player.hp = Math.min(g.player.hp + heal, g.player.maxHp);
-                                g.log(`💤 Вы выспались, восстановлено ${heal} HP.`, 'player');
+                                g.player.hp = Math.min(g.player.hp + 20, g.player.maxHp);
+                                g.log(`💤 Вы выспались, восстановлено 20 HP.`, 'player');
                             } else {
-                                g.log('😫 Уснуть не удалось, мысли о троне галактики не дают вам покоя.', 'info');
+                                g.log('😫 Уснуть не удалось, мысли о троне галактики и киберпрофурсетках не дают вам покоя.', 'info');
                             }
                             g.updateStats();
                             showMansionMenu();
@@ -723,6 +755,18 @@
         };
 
         let game = null;
+
+        function hasUndefeatedEnemy(g) {
+            return g.enemy && g.enemy.hp > 0 && !g.inBattle;
+        }
+
+        function checkAccessToSpecialLocation(g, locName) {
+            if (hasUndefeatedEnemy(g)) {
+                g.log(`Вы уже были здесь сегодня.`, 'info');
+                return false;
+            }
+            return true;
+        }
 
         function checkArmadilloChance() {
             if (!game) return;
@@ -752,7 +796,9 @@
             if (!game) return;
             const p = game.player;
             document.getElementById('hpDisplay').textContent = `${p.hp}/${p.maxHp}`;
-            document.getElementById('strengthDisplay').textContent = p.baseStrength + (p.tempStrength || 0);
+            const avgDamage = p.weapon ? p.weapon.avgDamage : 8;
+            const temp = p.tempStrength || 0;
+            document.getElementById('strengthDisplay').textContent = avgDamage + temp;
             document.getElementById('weaponDisplay').textContent = p.weapon.name;
             document.getElementById('locationDisplay').textContent = game.currentLocation.name;
             const tag = document.getElementById('armadilloTag');
@@ -906,7 +952,10 @@
                 { text: '⚔️ Атаковать', class: 'danger', action: playerAttack },
                 { text: '🛡️ Защититься', class: '', action: playerDefend },
                 { text: '🎒 Использовать артефакт', class: 'success', action: showArtifactMenu },
-                { text: '🏃 Отступить на локацию', class: 'location-btn', action: () => { game.inBattle = false; showLocationMenu(); } }
+                { text: '🏃 Отступить на локацию', class: 'location-btn', action: () => { 
+                    game.inBattle = false; 
+                    showLocationMenu(); 
+                } }
             ];
             showActions(buttons);
             updateStats();
@@ -987,39 +1036,47 @@
         }
 
         function giveWeapon(newWeapon) {
-            const oldWeapon = game.player.weapon;
-            const diff = Math.round(newWeapon.avgDamage - oldWeapon.avgDamage);
             game.player.weapon = newWeapon;
-            game.log(`🗡️ Получен ${newWeapon.name}! Сила урона увеличена на ${diff}!`, 'artifact');
+            game.log(`🗡️ Получен ${newWeapon.name}!`, 'artifact');
         }
 
         function defeatEnemy() {
             if (game.gameOver) return;
             game.log(`🎉 ${game.enemy.name} повержен!`, 'player');
 
-            if (game.enemyIndex === 6) {
-                game.player.baseStrength = Math.max(game.player.baseStrength, 15);
-                game.log('👑 Вы победили Жнеца и стали Суперадминистратором! Ваша сила выросла!', 'event');
+            // Сбрасываем сон
+            game.mansionSlept = false;
+
+            // Особняк: если ещё не открыт
+            if (!game.mansionAvailable) {
+                if (game.enemyIndex === 3 && Math.random() < 0.5) {
+                    game.mansionAvailable = true;
+                    game.mansionVisitedThisRound = false;
+                    game.log('\n🏛️ Вы откопали засыпанный песком особняк в мавританском стиле!', 'location');
+                }
+                if (game.enemyIndex === 4 && !game.mansionAvailable) {
+                    game.mansionAvailable = true;
+                    game.mansionVisitedThisRound = false;
+                    game.log('\n🏛️ Вы откопали засыпанный песком особняк в мавританском стиле!', 'location');
+                }
             }
 
             if (game.mansionAvailable) {
                 game.mansionVisitedThisRound = false;
             }
 
-            // Шанс получить артефакт после победы (исключая brains, nuclear, hyacinth, raptus)
+            // Флот после Барона Церберова
+            if (game.enemyIndex === 4) {
+                game.hasFleet = true;
+                game.log('🚀 Теперь у вас есть свой боевой флот! Вы можете отправиться на поиски врагов', 'event');
+            }
+
             if (Math.random() < 0.5 && game.player.artifacts.length < 3) {
-                const art = getRandomArtifact(['raptus']); // brains уже исключён
+                const art = getRandomArtifact(['raptus']);
                 if (art && !game.player.artifacts.some(a => a.id === art.id)) {
                     game.player.artifacts.push(art);
                     game.log(`🎁 Найден артефакт: ${art.name}!`, 'artifact');
                 }
-            }
-
-            // Открытие особняка
-            if (game.enemyIndex >= 3 && game.enemyIndex <= 5 && !game.mansionAvailable && Math.random() < 0.5) {
-                game.mansionAvailable = true;
-                game.mansionVisitedThisRound = false;
-                game.log('\n🏛️ Вы откопали засыпанный песком особняк в мавританском стиле!', 'location');
             }
 
             if (game.enemyIndex === 1) {
@@ -1082,7 +1139,12 @@
             loc.actions.forEach(action => {
                 const btn = document.createElement('button');
                 btn.className = 'btn';
-                btn.textContent = action.text;
+                // Меняем текст кнопки, если есть флот
+                let btnText = action.text;
+                if (action.text === "⚔️ Отправиться на поиски врагов" && game.hasFleet) {
+                    btnText = "⚔️ Полететь на поиски врагов";
+                }
+                btn.textContent = btnText;
                 btn.onclick = () => { action.exec(game); };
                 container.appendChild(btn);
             });
@@ -1095,11 +1157,17 @@
             const otherLocations = Object.values(LOCATIONS).filter(l => l.id !== game.currentLocation.id && l.id !== 'mansion');
             otherLocations.forEach(l => {
                 if (l.id === 'oracle' && !game.oracleUnlocked) return;
-                if (l.id === 'temple' && !game.templeUnlocked) return;
+                if (l.id === 'temple' && (!game.templeUnlocked || game.asteroidDestroyed)) return;
                 const btn = document.createElement('button');
                 btn.className = l.id === 'temple' ? 'btn temple-btn' : 'btn location-btn';
                 btn.textContent = l.name;
                 btn.onclick = () => {
+                    // Проверка доступа только для оракула и астероида (особняк доступен всегда)
+                    if (['oracle', 'temple'].includes(l.id)) {
+                        if (!checkAccessToSpecialLocation(game, l.name)) {
+                            return;
+                        }
+                    }
                     game.currentLocation = l;
                     game.locationVisits = {
                         brothel: 0,
@@ -1122,6 +1190,7 @@
                 mansionBtn.className = 'btn location-btn';
                 mansionBtn.textContent = '🏛️ Особняк в мавританском стиле';
                 mansionBtn.onclick = () => {
+                    // Особняк доступен всегда, проверка только на одно посещение за раунд
                     if (game.mansionVisitedThisRound) {
                         game.log('🏛️ Вы уже были здесь сегодня.', 'info');
                         game.currentLocation = LOCATIONS.SHUTTLE;
@@ -1144,7 +1213,6 @@
                 player: {
                     hp: 100,
                     maxHp: 100,
-                    baseStrength: 10,
                     tempStrength: 0,
                     extraDamage: 0,
                     tempShield: 0,
@@ -1179,6 +1247,8 @@
                 mansionStorage: [],
                 mansionSlept: false,
                 cardWinsThisVisit: 0,
+                asteroidDestroyed: false,
+                hasFleet: false, // флаг для флота
                 log: (msg, type = 'info') => {
                     const output = document.getElementById('gameOutput');
                     const p = document.createElement('div');
@@ -1188,8 +1258,8 @@
                     output.scrollTop = output.scrollHeight;
                 },
                 getDamage: function() {
-                    let base = this.player.weapon.damage();
-                    let total = base + this.player.baseStrength + (this.player.tempStrength || 0) + (this.player.extraDamage || 0);
+                    let weaponDamage = this.player.weapon ? this.player.weapon.damage() : 5 + Math.floor(Math.random() * 6);
+                    let total = weaponDamage + (this.player.tempStrength || 0) + (this.player.extraDamage || 0);
                     if (this.player.extraDamage > 0) this.player.extraDamage = 0;
                     return Math.max(1, total);
                 },
